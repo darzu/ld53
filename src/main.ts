@@ -23,6 +23,7 @@ import { initClothSandbox } from "./games/game-cloth.js";
 import { initCubeGame } from "./games/xp-cube.js";
 import { resetTempMatrixBuffer, V } from "./sprig-matrix.js";
 import { initSmol } from "./smol/game-smol.js";
+import { initLD53 } from "./ld53/game-ld53.js";
 import { initShadingGame } from "./games/game-shading.js";
 import { initModelingGame } from "./games/game-modeling.js";
 
@@ -42,8 +43,9 @@ const ALL_GAMES = [
   "cube",
   "shading",
   "modeling",
+  "ld53",
 ] as const;
-const GAME: typeof ALL_GAMES[number] = "smol";
+const GAME: typeof ALL_GAMES[number] = "ld53";
 
 // Run simulation with a fixed timestep @ 60hz
 const TIMESTEP = 1000 / 60;
@@ -277,6 +279,7 @@ async function startGame(localPeerName: string, host: string | null) {
   else if (GAME === "rogue") initRogueGame(EM, hosting);
   else if (GAME === "font") initFontEditor(EM);
   else if (GAME === "smol") initSmol(EM, hosting);
+  else if (GAME === "ld53") initLD53(EM, hosting);
   else if (GAME === "shading") initShadingGame();
   else if (GAME === "modeling") initModelingGame();
   else never(GAME, "TODO game");
