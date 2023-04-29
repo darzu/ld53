@@ -71,6 +71,18 @@ export function clampToAABB(v: vec3, aabb: AABB, out?: vec3): vec3 {
   return out;
 }
 
+export function pointInAABB(aabb: AABB, p: vec3) {
+  return (
+    true &&
+    aabb.min[0] < p[0] &&
+    aabb.min[1] < p[1] &&
+    aabb.min[2] < p[2] &&
+    p[0] < aabb.max[0] &&
+    p[1] < aabb.max[1] &&
+    p[2] < aabb.max[2]
+  );
+}
+
 // TODO(@darzu): too much alloc
 // export function getAABBCorners(aabb: AABB): vec3[] {
 //   const points: vec3[] = [

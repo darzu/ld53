@@ -425,6 +425,12 @@ export const LocalMeshes = {
     scaleMesh3(m, V(0.5, 20, 0.5));
     return m;
   },
+  ld53_cannon: () => {
+    let m = cloneMesh(CUBE_MESH);
+    m.dbgName = "ld53_cannon";
+    scaleMesh3(m, V(8, 2, 2));
+    return m;
+  },
   sail: makeSailMesh,
   // timber_rib: mkTimberRib,
   timber_splinter: mkTimberSplinterEnd,
