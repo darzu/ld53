@@ -89,6 +89,11 @@ What does compute shader gain us?
   Less CPU work
 */
 
+// TODO(@darzu): PERF HACK. These temp vecs are used for intermediate calculations.
+//    Be very careful about their liveness / lifetime!!
+const __temp1 = vec3.create();
+const __temp2 = vec3.create();
+
 export const WoodStateDef = EM.defineComponent("woodState", (s: WoodState) => {
   return s;
 });
@@ -143,6 +148,7 @@ onInit((em) => {
             assert(ball.collider.shape === "AABB");
             copyAABB(ballAABBWorld, ball.collider.aabb);
             transformAABB(ballAABBWorld, ball.world.transform);
+            // TODO(@darzu): PERF! We should probably translate ball into wood space not both into world space!
             // TODO(@darzu): this sphere should live elsewhere..
             const worldSphere: Sphere = {
               org: ball.world.position,
@@ -780,7 +786,7 @@ export function createTimberBuilder(mesh: RawMesh) {
 
       // TODO(@darzu): HACK! This ensures that adjacent "teeth" in the splinter
       //    are properly manifold/convex/something-something
-      let cross_last_this = vec2.cross([lastX, lastY], [x, y]);
+      let cross_last_this = vec2.cross([lastX, lastY], [x, y], __temp1);
       let maxLoop = 10;
       while (cross_last_this[2] > 0 && maxLoop > 0) {
         if (x < 0) y += 0.1;
@@ -788,7 +794,8 @@ export function createTimberBuilder(mesh: RawMesh) {
         vec2.cross([lastX, lastY], [x, y], cross_last_this);
         maxLoop--;
       }
-      if (VERBOSE_LOG && cross_last_this[2] > 0) console.warn(`non-manifold!`);
+      if (VERBOSE_LOG && cross_last_this[2] > 0)
+        console.warn(`splinter non-manifold!`);
 
       // +D side
       const vtj = V(x, y, d);
@@ -804,7 +811,7 @@ export function createTimberBuilder(mesh: RawMesh) {
       mesh.tri.push(V(v_tm + 1, v_blast, vtji + 1));
 
       // D to -D quad
-      mesh.quad.push(vec4.clone([v_blast, v_tlast, vtji, vtji + 1]));
+      mesh.quad.push(V(v_blast, v_tlast, vtji, vtji + 1));
 
       v_tlast = vtji;
       v_blast = vtji + 1;
@@ -818,7 +825,7 @@ export function createTimberBuilder(mesh: RawMesh) {
     mesh.tri.push(V(v_tm + 1, v_blast, v_bbr));
 
     // D to -D quad
-    mesh.quad.push(vec4.clone([v_blast, v_tlast, v_tbr, v_bbr]));
+    mesh.quad.push(V(v_blast, v_tlast, v_tbr, v_bbr));
   }
 
   // NOTE: for provoking vertices,
@@ -1032,6 +1039,7 @@ export function getBoardsFromMesh(m: RawMesh): WoodState {
       lastLoop: vec4, // [VI, VI, VI, VI],
       isFirstLoop: boolean = false
     ): BoardSeg[] | undefined {
+      // TODO(@darzu): using too many temps!
       // start tracking this segment
       const segVis = new Set([...lastLoop]);
 
@@ -1108,11 +1116,12 @@ export function getBoardsFromMesh(m: RawMesh): WoodState {
       let seg: BoardSeg;
 
       function getQiAreaNorm(qi: number) {
+        // TODO(@darzu): PERF. Using too many temps!
         // TODO(@darzu): i hate doing this vec4->number[] conversion just to get map.. wth
         const ps = [...m.quad[qi]].map((vi) => m.pos[vi]);
         // NOTE: assumes segments are parallelograms
-        const ab = vec3.sub(ps[1], ps[0]);
-        const ac = vec3.sub(ps[3], ps[0]);
+        const ab = vec3.sub(ps[1], ps[0], __temp1);
+        const ac = vec3.sub(ps[3], ps[0], __temp2);
         const areaNorm = vec3.cross(ab, ac, vec3.create());
         return areaNorm;
       }

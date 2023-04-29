@@ -117,7 +117,7 @@ export function createHomeShip(): HomeShip {
   // mat4.translate(builder.cursor, builder.cursor, [0, 1, 0]);
   builder.width = 0.45;
   builder.depth = 0.2;
-  if (false)
+  if (!false)
     for (let ccwi = 0; ccwi < 2; ccwi++) {
       const ccw = ccwi === 0;
       const ccwf = ccw ? -1 : 1;
@@ -168,7 +168,7 @@ export function createHomeShip(): HomeShip {
 
   // FRONT AND BACK WALL
   let _floorWidth = floorWidth;
-  if (false) {
+  if (!false) {
     let wallSegCount = 6;
     let numRibSegs = 6;
     let floorWidth = _floorWidth + 4;

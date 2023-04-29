@@ -81,7 +81,7 @@ function float32ArrayOfLength<N extends number>(n: N): Float32ArrayOfLength<N> {
   return new Float32Array(n) as Float32ArrayOfLength<N>;
 }
 
-const BUFFER_SIZE = 80000;
+const BUFFER_SIZE = 8000;
 const buffer = new ArrayBuffer(BUFFER_SIZE);
 let bufferIndex = 0;
 function tmpArray<N extends number>(n: N): Float32ArrayOfLength<N> {
@@ -92,7 +92,9 @@ function tmpArray<N extends number>(n: N): Float32ArrayOfLength<N> {
         (window as any).dbg.tempf32sBlame();
       }
     }
-    throw `Too many temp Float32Arrays allocated--try increasing BUFFER_SIZE`;
+    throw `Too many temp Float32Arrays allocated! Use PERF_DBG_F32S_TEMP_BLAME to find culprit. Or if you must, try increasing BUFFER_SIZE (currently ${
+      (Float32Array.BYTES_PER_ELEMENT * BUFFER_SIZE) / 1024
+    }kb)`;
   }
   if (PERF_DBG_F32S_TEMP_BLAME) {
     dbgAddBlame("temp_f32s", n);
