@@ -28,7 +28,10 @@ import { mkHalfEdgeQuadMesh } from "../primatives.js";
 import { HFace, meshToHalfEdgePoly } from "../half-edge.js";
 import { createGizmoMesh } from "../gizmos.js";
 import { EM } from "../entity-manager.js";
-import { PositionDef } from "../physics/transform.js";
+import {
+  PositionDef,
+  updateFrameFromPosRotScale,
+} from "../physics/transform.js";
 import { RenderableConstructDef } from "../render/renderer-ecs.js";
 import {
   createAABB,
@@ -191,6 +194,30 @@ async function dbgPathWithGizmos(path: Path) {
   EM.ensureComponentOn(e, RenderableConstructDef, mesh);
 }
 
+function snapXToPath(path: Path, x: number, out: vec3) {
+  for (let i = 0; i < path.length; i++) {
+    let pos = path[i].pos;
+    // are we ahead of x
+    if (x < pos[0]) {
+      if (i === 0) {
+        // x is before the whole path
+        vec3.copy(out, path[i].pos);
+        return out;
+      }
+      let prev = path[i - 1].pos;
+      assert(prev[0] <= x, `TODO: we assume path is in assending X order`);
+
+      let diff = vec3.sub(pos, prev);
+      let percent = (x - prev[0]) / diff[0];
+      vec3.add(prev, vec3.scale(diff, percent, out), out);
+      return out;
+    }
+  }
+  // the whole path is behind x
+  vec3.copy(out, path[path.length - 1].pos);
+  return out;
+}
+
 export function createHomeShip(): HomeShip {
   const _start = performance.now();
   const _timberMesh = createEmptyMesh("homeShip");
@@ -254,7 +281,10 @@ export function createHomeShip(): HomeShip {
   const ribSpace = keelLength / (ribCount + 1);
 
   for (let i = 0; i < ribCount; i++) {
-    const p = translatePath(makeRibPath(i), V(i * ribSpace, 0, 0));
+    const ribX = i * ribSpace + ribSpace + keelAABB.min[0];
+    const ribStart = snapXToPath(keelPath, ribX, vec3.create());
+    // const p = translatePath(makeRibPath(i), V(i * ribSpace, 0, 0));
+    const p = translatePath(makeRibPath(i), ribStart);
 
     if (i === 0) dbgPathWithGizmos(p);
 
