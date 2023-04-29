@@ -187,7 +187,8 @@ export async function fireBullet(
   speed: number, // = 0.02,
   rotationSpeed: number, // = 0.02,
   gravity: number, // = 6
-  health: number
+  health: number,
+  bulletAxis: vec3.InputT
 ) {
   {
     const music = EM.getResource(AudioDef);
@@ -214,11 +215,11 @@ export async function fireBullet(
     if (_nextBulletIdx >= _bulletPool.length) _nextBulletIdx = 0;
   }
 
-  let bulletAxis = V(1, 0, 0);
-  vec3.transformQuat(bulletAxis, rotation, bulletAxis);
-  vec3.normalize(bulletAxis, bulletAxis);
-  const linearVelocity = vec3.scale(bulletAxis, speed, vec3.create());
-  const angularVelocity = vec3.scale(bulletAxis, rotationSpeed, vec3.create());
+  // let bulletAxis = V(1, 0, 0);
+  const axis = vec3.transformQuat(bulletAxis, rotation, vec3.tmp());
+  vec3.normalize(axis, axis);
+  const linearVelocity = vec3.scale(axis, speed, vec3.create());
+  const angularVelocity = vec3.scale(axis, rotationSpeed, vec3.create());
 
   assertDbg(e.bulletConstruct, `bulletConstruct missing on: ${e.id}`);
   vec3.copy(e.bulletConstruct.location, location);

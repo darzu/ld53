@@ -409,23 +409,31 @@ export async function initRogueGame(em: EntityManager, hosting: boolean) {
           const ballHealth = 2.0;
 
           let bulletAxis = V(0, 0, -1);
+          // let bulletAxis = V(1, 0, 0);
           vec3.transformQuat(bulletAxis, c.world.rotation, bulletAxis);
           vec3.normalize(bulletAxis, bulletAxis);
           const bulletPos = vec3.clone(c.world.position);
           vec3.scale(bulletAxis, 2, bulletAxis);
           vec3.add(bulletPos, bulletAxis, bulletPos);
+          // const bulletRot = quat.rotateY(
+          //   c.world.rotation,
+          //   Math.PI / 2,
+          //   quat.tmp()
+          // );
 
           fireBullet(
             em,
             1,
             bulletPos,
+            // bulletRot,
             c.world.rotation,
             0.05,
             0.02,
             // gravity:
             // 3, (non-parametric)
             1.5 * 0.00001, // parametric
-            ballHealth
+            ballHealth,
+            bulletAxis
           );
 
           // remove player ball
@@ -530,7 +538,8 @@ export async function initRogueGame(em: EntityManager, hosting: boolean) {
           0.05,
           0.02,
           3 * 0.00001,
-          ballHealth
+          ballHealth,
+          [0, 0, -1]
         );
       }
 
@@ -855,11 +864,17 @@ export async function initRogueGame(em: EntityManager, hosting: boolean) {
         aabb: res.assets.ball.aabb,
       });
 
-      vec3.copy(g.position, [-28.11, 26.0, -28.39]);
-      quat.copy(g.rotation, [0.0, -0.94, 0.0, 0.34]);
+      // vec3.copy(g.position, [-28.11, 26.0, -28.39]);
+      // quat.copy(g.rotation, [0.0, -0.94, 0.0, 0.34]);
+      // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
+      // g.cameraFollow.yawOffset = 0.0;
+      // g.cameraFollow.pitchOffset = -0.593;
+
+      vec3.copy(g.position, [-3.61, 23.22, 36.56]);
+      quat.copy(g.rotation, [0.0, -0.11, 0.0, 0.99]);
       vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
       g.cameraFollow.yawOffset = 0.0;
-      g.cameraFollow.pitchOffset = -0.593;
+      g.cameraFollow.pitchOffset = -0.378;
     }
 
     if (!DBG_PLAYER) {

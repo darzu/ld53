@@ -291,7 +291,8 @@ export function registerEnemyShipSystems(em: EntityManager) {
               // TODO(@darzu): what stats here?
               0.02,
               6 * 0.00001,
-              10
+              10,
+              [0, 0, -1]
             );
           }
         }

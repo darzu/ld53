@@ -414,7 +414,8 @@ EM.registerSystem(
             v,
             0.02,
             g,
-            2.0
+            2.0,
+            [1, 0, 0]
           );
           tower.stoneTower.lastFired = res.time.time;
         }

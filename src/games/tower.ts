@@ -521,7 +521,8 @@ EM.registerSystem(
           speed,
           rotSpeed,
           gravity,
-          ballHealth
+          ballHealth,
+          [0, 0, -1]
         );
       }
     }

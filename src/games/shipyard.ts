@@ -124,7 +124,7 @@ function getPathFrom2DQuadMesh(m: Mesh, up: vec3.InputT): Path {
 
   // find the end face
   let endFaces = hpoly.faces.filter(isEndFace);
-  console.dir(endFaces);
+  // console.dir(endFaces);
   assert(endFaces.length === 2);
   const endFace =
     endFaces[0].edg.orig.vi < endFaces[1].edg.orig.vi
@@ -135,8 +135,8 @@ function getPathFrom2DQuadMesh(m: Mesh, up: vec3.InputT): Path {
   let endEdge = endFace.edg;
   while (!endEdge.twin.face) endEdge = endEdge.next;
   endEdge = endEdge.next.next;
-  console.log("endEdge");
-  console.dir(endEdge);
+  // console.log("endEdge");
+  // console.dir(endEdge);
 
   // build the path
   const path: Path = [];
@@ -154,8 +154,8 @@ function getPathFrom2DQuadMesh(m: Mesh, up: vec3.InputT): Path {
     e = e.next.next.twin;
   }
 
-  console.log("path");
-  console.dir(path);
+  // console.log("path");
+  // console.dir(path);
 
   return path;
 
@@ -280,23 +280,41 @@ export function createHomeShip(): HomeShip {
   const keelLength = keelSize[0];
   const ribSpace = keelLength / (ribCount + 1);
 
+  let outboardBezier: BezierCubic;
+  {
+    const prow = V(0, keelAABB.max[1], 0); // prow of ship
+    //
+    // (outboardBezier = {});
+  }
+
   for (let i = 0; i < ribCount; i++) {
     const ribX = i * ribSpace + ribSpace + keelAABB.min[0];
     const ribStart = snapXToPath(keelPath, ribX, vec3.create());
     // const p = translatePath(makeRibPath(i), V(i * ribSpace, 0, 0));
     const p = translatePath(makeRibPathWierd(i), ribStart);
-    if (i === 0) dbgPathWithGizmos(p);
+    // if (i === 0) dbgPathWithGizmos(p);
 
-    const outboard = (1 - Math.abs(i - ribCount / 2)) * 10;
+    // TODO(@darzu): compute outboard with bezier curve
+    const outboard = (1 - Math.abs(i - ribCount / 2) / (ribCount / 2)) * 10;
 
-    const p0 = vec3.clone(ribStart);
-    const p1 = vec3.add(p0, [0, 0, 5], vec3.create());
-    const p3 = vec3.add(ribStart, [0, keelSize[1], outboard], vec3.create());
-    const p2 = vec3.add(p3, [0, -5, 0], vec3.create());
-    const bezier: BezierCubic = { p0, p1, p2, p3 };
-    const bPath = createPathFromBezier(bezier, numRibSegs, [1, 0, 0]);
+    let ribBezier: BezierCubic;
+    {
+      const p0 = vec3.clone(ribStart);
+      const p1 = vec3.add(p0, [0, 0, 5], vec3.create());
+      const p3 = vec3.add(ribStart, [0, keelSize[1], outboard], vec3.create());
+      const p2 = vec3.add(p3, [0, -5, 0], vec3.create());
+      ribBezier = { p0, p1, p2, p3 };
+    }
 
-    if (i === 0) dbgPathWithGizmos(bPath);
+    const bPath = createPathFromBezier(ribBezier, numRibSegs, [1, 0, 0]);
+
+    if (i === 0) {
+      console.log("RIB BEZIER PATH");
+      console.log(outboard);
+      console.dir(ribBezier);
+      console.dir(bPath);
+      dbgPathWithGizmos(bPath);
+    }
 
     appendBoard(builder.mesh, {
       path: p,
