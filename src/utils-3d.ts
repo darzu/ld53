@@ -113,7 +113,7 @@ export function mat4Dbg(v: mat4): string {
  ${ns[3]}\t|${ns[7]}\t|${ns[11]}\t|${ns[15]}`
   );
 }
-export function centroid(vs: vec3[]): vec3 {
+export function centroid(...vs: vec3[]): vec3 {
   const avgX = avg(vs.map((v) => v[0]));
   const avgY = avg(vs.map((v) => v[1]));
   const avgZ = avg(vs.map((v) => v[2]));
@@ -143,7 +143,11 @@ export function orthonormalize(forward: vec3, upish: vec3, outRight: vec3) {
 
 // quat utilities
 // assumes local up axis is [0,1,0] and forward is [0,0,1]
-export function quatFromUpForward(out: quat, up: vec3, forwardish: vec3): quat {
+export function quatFromUpForward(
+  out: quat,
+  up: vec3.InputT,
+  forwardish: vec3
+): quat {
   // https://stackoverflow.com/questions/52413464/look-at-quaternion-using-up-vector/52551983#52551983
   const side = vec3.cross(forwardish, up);
   vec3.negate(side, side); // TODO(@darzu): is this negate right?

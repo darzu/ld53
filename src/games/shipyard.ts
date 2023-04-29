@@ -1,9 +1,17 @@
 import { DBG_ASSERT } from "../flags.js";
 import { vec2, vec3, vec4, quat, mat4, mat3, V } from "../sprig-matrix.js";
 import { jitter } from "../math.js";
-import { Mesh, RawMesh, validateMesh } from "../render/mesh.js";
+import {
+  getAABBFromMesh,
+  mapMeshPositions,
+  mergeMeshes,
+  Mesh,
+  RawMesh,
+  transformMesh,
+  validateMesh,
+} from "../render/mesh.js";
 import { assert, assertDbg } from "../util.js";
-import { randNormalPosVec3 } from "../utils-3d.js";
+import { centroid, quatFromUpForward, randNormalPosVec3 } from "../utils-3d.js";
 import {
   createEmptyMesh,
   createTimberBuilder,
@@ -16,6 +24,12 @@ import {
   setEndQuadIdxs,
 } from "../wood.js";
 import { BLACK } from "../assets.js";
+import { mkHalfEdgeQuadMesh } from "../primatives.js";
+import { HFace, meshToHalfEdgePoly } from "../half-edge.js";
+import { createGizmoMesh } from "../gizmos.js";
+import { EM } from "../entity-manager.js";
+import { PositionDef } from "../physics/transform.js";
+import { RenderableConstructDef } from "../render/renderer-ecs.js";
 
 const numRibSegs = 8;
 
@@ -96,18 +110,125 @@ const keelTemplate: Mesh = {
   surfaceIds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
   usesProvoking: true,
 };
+const __temp1 = vec3.create();
+function getPathFrom2DQuadMesh(m: Mesh, up: vec3.InputT): Path {
+  const hpoly = meshToHalfEdgePoly(m);
+
+  // find the end face
+  let endFaces = hpoly.faces.filter(isEndFace);
+  console.dir(endFaces);
+  assert(endFaces.length === 2);
+  const endFace =
+    endFaces[0].edg.orig.vi < endFaces[1].edg.orig.vi
+      ? endFaces[0]
+      : endFaces[1];
+
+  // find the end edge
+  let endEdge = endFace.edg;
+  while (!endEdge.twin.face) endEdge = endEdge.next;
+  endEdge = endEdge.next.next;
+  console.log("endEdge");
+  console.dir(endEdge);
+
+  // build the path
+  const path: Path = [];
+  let e = endEdge;
+  while (true) {
+    let v0 = m.pos[e.orig.vi];
+    let v1 = m.pos[e.next.orig.vi];
+    let pos = centroid(v0, v1);
+    let dir = vec3.cross(vec3.sub(v0, v1, __temp1), up, __temp1);
+    const rot = quatFromUpForward(quat.create(), up, dir);
+    path.push({ pos, rot });
+
+    if (!e.face) break;
+
+    e = e.next.next.twin;
+  }
+
+  console.log("path");
+  console.dir(path);
+
+  return path;
+
+  function isEndFace(f: HFace): boolean {
+    let neighbor: HFace | undefined = undefined;
+    let e = f.edg;
+    for (let i = 0; i < 4; i++) {
+      if (e.twin.face)
+        if (!neighbor) neighbor = e.twin.face;
+        else if (e.twin.face !== neighbor) return false;
+      e = e.next;
+    }
+    return true;
+  }
+}
+
+function createPathGizmos(path: Path): Mesh {
+  let gizmos: Mesh[] = [];
+  path.forEach((p) => {
+    const g = createGizmoMesh();
+    g.pos.forEach((v) => {
+      vec3.transformQuat(v, p.rot, v);
+      vec3.add(v, p.pos, v);
+    });
+    gizmos.push(g);
+  });
+  const res = mergeMeshes(...gizmos) as Mesh;
+  res.usesProvoking = true;
+  return res;
+}
+async function dbgPathWithGizmos(path: Path) {
+  const mesh = createPathGizmos(path);
+
+  const e = EM.new();
+  EM.ensureComponentOn(e, PositionDef);
+  EM.ensureComponentOn(e, RenderableConstructDef, mesh);
+}
 
 export function createHomeShip(): HomeShip {
   const _start = performance.now();
   const _timberMesh = createEmptyMesh("homeShip");
 
+  const builder: TimberBuilder = createTimberBuilder(_timberMesh);
+
   // KEEL
   // TODO(@darzu): IMPL keel!
+  {
+    const keelWidth = 0.7;
+    const keelDepth = 1.2;
+    builder.width = keelWidth;
+    builder.depth = keelDepth;
+
+    const keelTempAABB = getAABBFromMesh(keelTemplate);
+    console.dir(keelTempAABB);
+    let keelTemplate2 = transformMesh(
+      keelTemplate,
+      mat4.fromRotationTranslationScale(
+        quat.rotateX(quat.identity(), Math.PI / 2),
+        // [0, 0, 0],
+        vec3.negate(keelTempAABB.min),
+        [6, 6, 6]
+      )
+    ) as Mesh;
+    const keelPath: Path = getPathFrom2DQuadMesh(keelTemplate2, [0, 0, 1]);
+    // translatePath(keelPath, [0, 30, 0]);
+    // r->g, g->b, b->r
+    const fixRot = quat.fromMat3(mat3.fromValues(0, 1, 0, 0, 0, 1, 1, 0, 0));
+    keelPath.forEach((p) => quat.mul(p.rot, fixRot, p.rot));
+
+    dbgPathWithGizmos(keelPath);
+
+    appendBoard(builder.mesh, {
+      path: keelPath,
+      width: keelWidth,
+      depth: keelDepth,
+    });
+  }
 
   // RIBS
   const ribWidth = 0.5;
   const ribDepth = 0.4;
-  const builder: TimberBuilder = createTimberBuilder(_timberMesh);
   builder.width = ribWidth;
   builder.depth = ribDepth;
   const ribCount = 10;
@@ -115,6 +236,8 @@ export function createHomeShip(): HomeShip {
 
   for (let i = 0; i < ribCount; i++) {
     const p = translatePath(makeRibPath(i), V(i * ribSpace, 0, 0));
+
+    if (i === 0) dbgPathWithGizmos(p);
 
     appendBoard(builder.mesh, {
       path: p,
@@ -439,7 +562,7 @@ function cloneBoard(board: Board): Board {
     path: clonePath(board.path),
   };
 }
-function translatePath(p: Path, tran: vec3) {
+function translatePath(p: Path, tran: vec3.InputT) {
   p.forEach((n) => vec3.add(n.pos, tran, n.pos));
   return p;
 }
@@ -512,7 +635,7 @@ function makeRibPath(idx: number): Path {
 }
 
 function appendBoard(mesh: RawMesh, board: Board) {
-  assert(board.path.length >= 2);
+  assert(board.path.length >= 2, `invalid board path!`);
   // TODO(@darzu): de-duplicate with TimberBuilder
   const firstQuadIdx = mesh.quad.length;
   // const mesh = b.mesh;

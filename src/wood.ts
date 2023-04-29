@@ -1105,8 +1105,8 @@ export function getBoardsFromMesh(m: RawMesh): WoodState {
         createAABB(),
         vertIdxs.map((vi) => m.pos[vi])
       );
-      const lastMid = centroid([...lastLoop].map((vi) => m.pos[vi]));
-      const nextMid = centroid([...nextLoop].map((vi) => m.pos[vi]));
+      const lastMid = centroid(...[...lastLoop].map((vi) => m.pos[vi]));
+      const nextMid = centroid(...[...nextLoop].map((vi) => m.pos[vi]));
       const mid = createLine(lastMid, nextMid);
       const areaNorms = segQis.map(getQiAreaNorm);
       const len1 = vec3.dist(m.pos[lastLoop[1]], m.pos[lastLoop[0]]);

@@ -95,6 +95,7 @@ import {
   startPirates,
 } from "./pirate.js";
 import { ParametricDef } from "./parametric-motion.js";
+import { addGizmoChild } from "../utils-game.js";
 
 /*
   Game mechanics:
@@ -263,8 +264,8 @@ export async function initRogueGame(em: EntityManager, hosting: boolean) {
   // const timberPos = vec3.clone(res.assets.timber_rib.center);
   // vec3.negate(timberPos, timberPos);
   // vec3.scale(timberPos, timberPos, scale);
-  timberPos[1] += 1;
-  timberPos[0] -= ribCount * 0.5 * ribSpace;
+  // timberPos[1] += 1;
+  // timberPos[0] -= ribCount * 0.5 * ribSpace;
   // timberPos[2] -= floorPlankCount * 0.5 * floorSpace;
   em.ensureComponentOn(timber, PositionDef, timberPos);
   // em.ensureComponentOn(timber, PositionDef, [0, 0, -4]);
@@ -278,6 +279,8 @@ export async function initRogueGame(em: EntityManager, hosting: boolean) {
   });
   const timberHealth = createWoodHealth(timberState);
   em.ensureComponentOn(timber, WoodHealthDef, timberHealth);
+
+  addGizmoChild(timber, 10);
 
   // CANNONS
   const realCeilHeight = ceilHeight + timberPos[1];

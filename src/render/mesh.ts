@@ -434,6 +434,7 @@ export function scaleMesh(m: RawMesh, by: number) {
 export function scaleMesh3(m: RawMesh, by: vec3) {
   mapMeshPositions(m, (p) => vec3.mul(p, by, vec3.create()));
 }
+// TODO(@darzu): need a version that preserves Mesh vs RawMesh
 export function transformMesh(m: RawMesh, t: mat4) {
   mapMeshPositions(m, (p) => vec3.transformMat4(p, t, vec3.create()));
   return m;

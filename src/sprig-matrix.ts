@@ -549,8 +549,14 @@ export module quat {
   export function rotateZ(v1: InputT, n: number, out?: T) {
     return GL.rotateZ(out ?? tmp(), v1, n) as T;
   }
+  // export function rotateMat3(v1: InputT, m: mat3, out?: T) {
+  //   // TODO(@darzu): IMPL!
+  // }
   export function fromEuler(x: number, y: number, z: number, out?: T): T {
     return GL.fromEuler(out ?? tmp(), x, y, z) as T;
+  }
+  export function fromMat3(m: mat3, out?: T): T {
+    return GL.fromMat3(out ?? tmp(), m) as T;
   }
 }
 
@@ -901,6 +907,30 @@ export module mat3 {
     out[0] = 1;
     out[4] = 1;
     out[8] = 1;
+    return out;
+  }
+
+  export function fromValues(
+    m00: number,
+    m01: number,
+    m02: number,
+    m10: number,
+    m11: number,
+    m12: number,
+    m20: number,
+    m21: number,
+    m22: number
+  ) {
+    var out = float32ArrayOfLength(9);
+    out[0] = m00;
+    out[1] = m01;
+    out[2] = m02;
+    out[3] = m10;
+    out[4] = m11;
+    out[5] = m12;
+    out[6] = m20;
+    out[7] = m21;
+    out[8] = m22;
     return out;
   }
 
