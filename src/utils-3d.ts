@@ -143,16 +143,18 @@ export function orthonormalize(forward: vec3, upish: vec3, outRight: vec3) {
 
 // quat utilities
 // assumes local up axis is [0,1,0] and forward is [0,0,1]
+const __t1 = vec3.create();
+const __t2 = vec3.create();
 export function quatFromUpForward(
   out: quat,
   up: vec3.InputT,
   forwardish: vec3
 ): quat {
   // https://stackoverflow.com/questions/52413464/look-at-quaternion-using-up-vector/52551983#52551983
-  const side = vec3.cross(forwardish, up);
+  const side = vec3.cross(forwardish, up, __t1);
   vec3.negate(side, side); // TODO(@darzu): is this negate right?
   vec3.normalize(side, side);
-  const backward = vec3.cross(side, up);
+  const backward = vec3.cross(side, up, __t2);
 
   const trace = side[0] + up[1] + backward[2];
   if (trace > 0.0) {

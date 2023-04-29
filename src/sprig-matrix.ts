@@ -283,6 +283,12 @@ export module vec3 {
   export function add(v1: InputT, v2: InputT, out?: T): T {
     return GL.add(out ?? tmp(), v1, v2) as T;
   }
+  export function sum(out: T, ...vs: InputT[]): T {
+    out[0] = vs.reduce((p, n) => p + n[0], 0);
+    out[1] = vs.reduce((p, n) => p + n[1], 0);
+    out[2] = vs.reduce((p, n) => p + n[2], 0);
+    return out;
+  }
   export function sub(v1: InputT, v2: InputT, out?: T): T {
     return GL.sub(out ?? tmp(), v1, v2) as T;
   }

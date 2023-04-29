@@ -284,9 +284,19 @@ export function createHomeShip(): HomeShip {
     const ribX = i * ribSpace + ribSpace + keelAABB.min[0];
     const ribStart = snapXToPath(keelPath, ribX, vec3.create());
     // const p = translatePath(makeRibPath(i), V(i * ribSpace, 0, 0));
-    const p = translatePath(makeRibPath(i), ribStart);
-
+    const p = translatePath(makeRibPathWierd(i), ribStart);
     if (i === 0) dbgPathWithGizmos(p);
+
+    const outboard = (1 - Math.abs(i - ribCount / 2)) * 10;
+
+    const p0 = vec3.clone(ribStart);
+    const p1 = vec3.add(p0, [0, 0, 5], vec3.create());
+    const p3 = vec3.add(ribStart, [0, keelSize[1], outboard], vec3.create());
+    const p2 = vec3.add(p3, [0, -5, 0], vec3.create());
+    const bezier: BezierCubic = { p0, p1, p2, p3 };
+    const bPath = createPathFromBezier(bezier, numRibSegs, [1, 0, 0]);
+
+    if (i === 0) dbgPathWithGizmos(bPath);
 
     appendBoard(builder.mesh, {
       path: p,
@@ -353,7 +363,7 @@ export function createHomeShip(): HomeShip {
   // mat4.translate(builder.cursor, builder.cursor, [0, 1, 0]);
   builder.width = 0.45;
   builder.depth = 0.2;
-  if (!false)
+  if (false)
     for (let ccwi = 0; ccwi < 2; ccwi++) {
       const ccw = ccwi === 0;
       const ccwf = ccw ? -1 : 1;
@@ -404,7 +414,7 @@ export function createHomeShip(): HomeShip {
 
   // FRONT AND BACK WALL
   let _floorWidth = floorWidth;
-  if (!false) {
+  if (false) {
     let wallSegCount = 6;
     let numRibSegs = 6;
     let floorWidth = _floorWidth + 4;
@@ -652,7 +662,65 @@ function mirrorPath(p: Path, planeNorm: vec3) {
   return p;
 }
 
-function makeRibPath(idx: number): Path {
+interface BezierCubic {
+  p0: vec3;
+  p1: vec3;
+  p2: vec3;
+  p3: vec3;
+}
+function bezierPosition(b: BezierCubic, t: number, out: vec3): vec3 {
+  // https://en.wikipedia.org/wiki/Bézier_curve
+  // B =
+  //   (1 - t) ** 3 * p0
+  // + 3 * (1 - t) ** 2 * t * p1
+  // + 3 * (1 - t) * t ** 2 * p2
+  // + t ** 3 * p3
+  const t0 = (1 - t) ** 3;
+  const t1 = 3 * (1 - t) ** 2 * t;
+  const t2 = 3 * (1 - t) * t ** 2;
+  const t3 = t ** 3;
+  out[0] = b.p0[0] * t0 + b.p1[0] * t1 + b.p2[0] * t2 + b.p3[0] * t3;
+  out[1] = b.p0[1] * t0 + b.p1[1] * t1 + b.p2[1] * t2 + b.p3[1] * t3;
+  out[2] = b.p0[2] * t0 + b.p1[2] * t1 + b.p2[2] * t2 + b.p3[2] * t3;
+  return out;
+}
+function bezierTangent(b: BezierCubic, t: number, out: vec3): vec3 {
+  const t0 = 3 * (1 - t) ** 2;
+  const t1 = 6 * (1 - t) * t;
+  const t2 = 3 * t ** 2;
+  out[0] =
+    t0 * (b.p1[0] - b.p0[0]) +
+    t1 * (b.p2[0] - b.p1[0]) +
+    t2 * (b.p3[0] - b.p2[0]);
+  out[1] =
+    t0 * (b.p1[1] - b.p0[1]) +
+    t1 * (b.p2[1] - b.p1[1]) +
+    t2 * (b.p3[1] - b.p2[1]);
+  out[2] =
+    t0 * (b.p1[2] - b.p0[2]) +
+    t1 * (b.p2[2] - b.p1[2]) +
+    t2 * (b.p3[2] - b.p2[2]);
+  return out;
+}
+function createPathFromBezier(
+  b: BezierCubic,
+  nodeCount: number,
+  up: vec3.InputT
+): Path {
+  assert(nodeCount >= 2);
+  const path: Path = [];
+  for (let i = 0; i < nodeCount; i++) {
+    const t = i / (nodeCount - 1);
+    const pos = bezierPosition(b, t, vec3.create());
+    const tan = bezierTangent(b, t, vec3.tmp());
+    vec3.normalize(tan, tan);
+    const rot = quatFromUpForward(quat.create(), up, tan);
+    path.push({ pos, rot });
+  }
+  return path;
+}
+
+function makeRibPathWierd(idx: number): Path {
   const cursor = mat4.create();
 
   const ribCount = 10;
@@ -682,6 +750,39 @@ function makeRibPath(idx: number): Path {
 
   return path;
 }
+
+// TODO(@darzu): BEZIER STUFF!
+
+// function makeRibPath(height: number, width: number): Path {
+//   const cursor = mat4.create();
+
+//   const ribCount = 10;
+//   const iF = idx / (ribCount - 1.0);
+//   const mF = Math.abs(iF - 0.5);
+//   const eF = 1.0 - mF;
+
+//   // TODO(@darzu): TWEAK ALL THIS IN UI!
+//   let initAngle = -0.45;
+//   let angle = 0.03 + mF * 0.02;
+//   let dAngle = 0.005 + eF * 0.01;
+
+//   const path: Path = [];
+
+//   mat4.rotateX(cursor, Math.PI * initAngle, cursor);
+//   path.push(nodeFromMat4(cursor));
+
+//   for (let i = 0; i < numRibSegs; i++) {
+//     mat4.translate(cursor, [0, 2, 0], cursor);
+//     mat4.rotateX(cursor, Math.PI * angle, cursor);
+//     path.push(nodeFromMat4(cursor));
+//     mat4.rotateX(cursor, Math.PI * angle, cursor);
+//     angle = angle - dAngle;
+//   }
+//   mat4.translate(cursor, [0, 2, 0], cursor);
+//   path.push(nodeFromMat4(cursor));
+
+//   return path;
+// }
 
 function appendBoard(mesh: RawMesh, board: Board) {
   assert(board.path.length >= 2, `invalid board path!`);
