@@ -511,12 +511,8 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   }
   createGraph3D(vec3.add(worldGizmo.position, [50, 10, 50], V(0, 0, 0)), data);
   let stoneTower = EM.new();
-  EM.ensureComponentOn(stoneTower, PositionDef, V(0, 20, 0));
-  EM.ensureComponentOn(
-    stoneTower,
-    RenderableConstructDef,
-    createStoneTower(100, 20, 5, 2, 2.5, false)
-  );
+  createStoneTower(stoneTower, 100, 20, 5, 2, 2.5, false);
+  EM.ensureComponentOn(stoneTower, PositionDef, V(0, -5, 0));
   EM.ensureComponentOn(stoneTower, ColorDef, ENDESGA16.darkGray);
 }
 
