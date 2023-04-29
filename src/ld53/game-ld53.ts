@@ -509,7 +509,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   EM.ensureComponentOn(
     stoneTower,
     RenderableConstructDef,
-    createStoneTower(20, 100, 10, 5, 10, true)
+    createStoneTower(20, 20, 10, 5, 10, false)
   );
   EM.ensureComponentOn(stoneTower, ColorDef, ENDESGA16.lightGray);
 }
