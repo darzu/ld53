@@ -83,13 +83,20 @@ export function vec2Dbg(v: vec2): string {
 export function vec3Dbg(v: vec3): string {
   return `[${v[0].toFixed(2)},${v[1].toFixed(2)},${v[2].toFixed(2)}]`;
 }
-export function vec3Dbg2(v: vec3): string {
-  return `V(${v[0].toFixed(2)},${v[1].toFixed(2)},${v[2].toFixed(2)})`;
+export function vec3Dbg2(v: vec3, precision = 2): string {
+  return `V(${v[0].toFixed(precision)},${v[1].toFixed(
+    precision
+  )},${v[2].toFixed(precision)})`;
 }
 export function vec4Dbg(v: vec4): string {
   return `[${v[0].toFixed(2)},${v[1].toFixed(2)},${v[2].toFixed(
     2
   )},${v[3].toFixed(2)}]`;
+}
+export function vec4Dbg2(v: vec4, precision = 2): string {
+  return `V(${v[0].toFixed(precision)},${v[1].toFixed(
+    precision
+  )},${v[2].toFixed(precision)},${v[3].toFixed(precision)})`;
 }
 export function quatDbg(q: quat): string {
   const axis = tempVec3();

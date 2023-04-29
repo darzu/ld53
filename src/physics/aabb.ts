@@ -1,7 +1,7 @@
 import { clamp } from "../math.js";
 import { mat4, V, vec2, vec3 } from "../sprig-matrix.js";
 import { range } from "../util.js";
-import { vec3Mid } from "../utils-3d.js";
+import { vec3Dbg2, vec3Mid } from "../utils-3d.js";
 
 export function __resetAABBDbgCounters() {
   _doesOverlapAABBs = 0;
@@ -209,4 +209,14 @@ export function getHalfsizeFromAABB(aabb: AABB, out?: vec3): vec3 {
   out[1] = (aabb.max[1] - aabb.min[1]) * 0.5;
   out[2] = (aabb.max[2] - aabb.min[2]) * 0.5;
   return out;
+}
+
+export function aabbListToStr(aabbs: AABB[]): string {
+  let resStr = "";
+  resStr += `const aabbs: AABB[] = [`;
+  for (let aabb of aabbs) {
+    resStr += `{min: ${vec3Dbg2(aabb.min)}, max: ${vec3Dbg2(aabb.max)}},`;
+  }
+  resStr += `];`;
+  return resStr;
 }

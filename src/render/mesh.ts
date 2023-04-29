@@ -4,7 +4,7 @@ import { max, sum } from "../math.js";
 import { AABB, createAABB, getAABBFromPositions } from "../physics/aabb.js";
 import { assert, range } from "../util.js";
 import { arraySortedEqual, arrayUnsortedEqual } from "../util.js";
-import { vec3Dbg, vec3Mid } from "../utils-3d.js";
+import { vec3Dbg, vec3Dbg2, vec3Mid, vec4Dbg2 } from "../utils-3d.js";
 import { drawBall, drawLine } from "../utils-game.js";
 
 // TODO(@darzu): NEEDS REFACTOR. we need to rethink these whole mesh family of objects;
@@ -850,3 +850,25 @@ dbg.enableTransitionTime()
 
 register2DDebugViz("meshGrid");
 */
+
+export function stringifyMesh(m: Mesh): string {
+  assert(!m.uvs && !m.normals && !m.tangents && !m.lines);
+  let res = "";
+  res += "{\n";
+  res += `pos: ${vec3ListToStr(m.pos, 2)},\n`;
+  res += `tri: ${vec3ListToStr(m.tri, 0)},\n`;
+  res += `quad: ${vec4ListToStr(m.quad, 0)},\n`;
+  res += `colors: ${vec3ListToStr(m.colors, 2)},\n`;
+  res += `surfaceIds: [${m.surfaceIds.join(",")}],\n`;
+  res += `usesProvoking: ${m.usesProvoking},\n`;
+  res += "}\n";
+
+  return res;
+
+  function vec3ListToStr(vs: vec3[], precision: number): string {
+    return `[${vs.map((v) => vec3Dbg2(v, precision)).join(",")}]`;
+  }
+  function vec4ListToStr(vs: vec4[], precision: number): string {
+    return `[${vs.map((v) => vec4Dbg2(v, precision)).join(",")}]`;
+  }
+}

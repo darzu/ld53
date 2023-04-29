@@ -38,8 +38,72 @@ export interface ShipyardUI {
   // TODO(@darzu): other params
 }
 
+// Note: Made w/ game-font !
+const keelTemplate: Mesh = {
+  pos: [
+    V(0.58, 0.0, 1.49),
+    V(-1.4, 0.0, 1.52),
+    V(-1.38, 0.0, 1.74),
+    V(0.59, 0.0, 1.71),
+    V(-3.73, 0.0, 1.47),
+    V(-3.72, 0.0, 1.68),
+    V(-4.4, 0.0, 1.22),
+    V(-4.64, 0.0, 1.41),
+    V(-4.76, 0.0, 0.24),
+    V(-5.03, 0.0, 0.3),
+    V(-4.81, 0.0, -0.08),
+    V(-5.13, 0.0, -0.04),
+    V(-5.05, 0.0, -1.12),
+    V(-5.38, 0.0, -1.09),
+    V(2.36, 0.0, 1.46),
+    V(2.28, 0.0, 1.26),
+    V(3.63, 0.0, 1.07),
+    V(3.5, 0.0, 0.89),
+    V(4.51, 0.0, 0.49),
+    V(4.32, 0.0, 0.37),
+    V(5.15, 0.0, -0.4),
+    V(4.93, 0.0, -0.44),
+    V(5.29, 0.0, -1.46),
+    V(5.06, 0.0, -1.46),
+  ],
+  tri: [],
+  quad: [
+    V(0, 1, 2, 3),
+    V(4, 5, 2, 1),
+    V(6, 7, 5, 4),
+    V(8, 9, 7, 6),
+    V(10, 11, 9, 8),
+    V(12, 13, 11, 10),
+    V(14, 15, 0, 3),
+    V(16, 17, 15, 14),
+    V(18, 19, 17, 16),
+    V(20, 21, 19, 18),
+    V(22, 23, 21, 20),
+  ],
+  colors: [
+    V(0.49, 0.16, 0.86),
+    V(0.48, 0.03, 0.88),
+    V(0.47, 0.19, 0.86),
+    V(0.53, 0.5, 0.68),
+    V(0.34, 0.74, 0.58),
+    V(0.62, 0.36, 0.69),
+    V(0.93, 0.32, 0.19),
+    V(0.57, 0.18, 0.8),
+    V(0.67, 0.18, 0.72),
+    V(0.19, 0.92, 0.34),
+    V(0.42, 0.81, 0.42),
+  ],
+  surfaceIds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+  usesProvoking: true,
+};
+
 export function createHomeShip(): HomeShip {
+  const _start = performance.now();
   const _timberMesh = createEmptyMesh("homeShip");
+
+  // KEEL
+  // TODO(@darzu): IMPL keel!
+
   // RIBS
   const ribWidth = 0.5;
   const ribDepth = 0.4;
@@ -240,6 +304,9 @@ export function createHomeShip(): HomeShip {
 
   reserveSplinterSpace(timberState, 200);
   validateMesh(timberState.mesh);
+
+  const _end = performance.now();
+  console.log(`createHomeShip took: ${(_end - _start).toFixed(1)}ms`);
 
   return {
     timberState,
