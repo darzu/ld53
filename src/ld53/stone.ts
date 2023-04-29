@@ -53,6 +53,9 @@ function knockOutBrickAtIndex(tower: Tower, index: number) {
   }
 }
 
+let towardsAttractorTmp = vec3.tmp();
+let testAABBTmp = vec3.tmp();
+
 function shrinkBrickAtIndex(
   tower: Tower,
   baseIndex: number,
@@ -90,13 +93,21 @@ function shrinkBrickAtIndex(
       console.log("should never happen");
     }
     if (pointInAABB(aabb, attracted)) {
-      let towardsAttractor = vec3.sub(attractor, attracted);
+      let towardsAttractor = vec3.sub(
+        attractor,
+        attracted,
+        towardsAttractorTmp
+      );
       let min = 0;
       let max = 0.8; // don't want to shrink bricks too much
       if (
         pointInAABB(
           aabb,
-          vec3.add(attracted, vec3.scale(towardsAttractor, max))
+          vec3.add(
+            attracted,
+            vec3.scale(towardsAttractor, max, testAABBTmp),
+            testAABBTmp
+          )
         )
       ) {
         console.log(`unshrinkable point at ${baseIndex} + ${attractedIndex}`);
@@ -111,7 +122,11 @@ function shrinkBrickAtIndex(
         if (
           pointInAABB(
             aabb,
-            vec3.add(attracted, vec3.scale(towardsAttractor, half))
+            vec3.add(
+              attracted,
+              vec3.scale(towardsAttractor, half, testAABBTmp),
+              testAABBTmp
+            )
           )
         ) {
           min = half;
