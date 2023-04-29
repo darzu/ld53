@@ -54,7 +54,7 @@ export const StoneTowerDef = EM.defineComponent(
       [typeof PositionDef, typeof RotationDef, typeof WorldFrameDef]
     >,
     fireRate = 1000,
-    projectileSpeed = 0.1
+    projectileSpeed = 0.2
   ) =>
     ({
       rows: [],
@@ -341,8 +341,11 @@ export async function createStoneTower(
 }
 
 let __frame = 0;
+const __previousPartyPos = vec3.create();
+let __prevTime = 0;
 
-const EPSILON = 1.0;
+const EPSILON = 10.0;
+const MAX_THETA = (31 * Math.PI) / 64;
 
 EM.registerSystem(
   [StoneTowerDef, WorldFrameDef],
@@ -357,69 +360,101 @@ EM.registerSystem(
         res.time.time
       ) {
         // we're able to fire. should we?
-        const towerSpaceTarget = vec3.transformMat4(
-          target,
-          mat4.invert(tower.world.transform)
+        const invertedTransform = mat4.invert(tower.world.transform);
+        const towerSpaceTarget = vec3.transformMat4(target, invertedTransform);
+        const prevTowerSpaceTarget = vec3.transformMat4(
+          __previousPartyPos,
+          invertedTransform
         );
 
-        // is target at Z = 0 in tower-space?
-        console.log(`target Z=${towerSpaceTarget[2]}`);
-        if (Math.abs(towerSpaceTarget[2]) < EPSILON) {
-          // now, find the angle from our cannon.
-          const x =
-            towerSpaceTarget[0] - tower.stoneTower.cannon()!.position[0];
-          const y =
-            towerSpaceTarget[1] - tower.stoneTower.cannon()!.position[1];
-          const v = tower.stoneTower.projectileSpeed;
-          const g = 7.0 * 0.00001;
-          // https://en.wikipedia.org/wiki/Projectile_motion#Angle_%CE%B8_required_to_hit_coordinate_(x,_y)
-          const theta1 = Math.atan(
-            (v * v +
-              Math.sqrt(v * v * v * v - g * (g * x * x + 2 * y * v * v))) /
-              (g * x)
-          );
-          const theta2 = Math.atan(
-            (v * v -
-              Math.sqrt(v * v * v * v - g * (g * x * x + 2 * y * v * v))) /
-              (g * x)
-          );
+        const targetVelocity = vec3.scale(
+          vec3.sub(towerSpaceTarget, prevTowerSpaceTarget),
+          1 / (res.time.time - __prevTime)
+        );
 
-          // prefer positive theta
-          let theta = theta1;
-          if (theta2 > 0) theta = theta2;
-          if (isNaN(theta)) {
-            // no firing solution--target is too far
-            console.log("target is in sights but too far away");
-            continue;
-          }
-          console.log(
-            `Firing, theta1 is ${theta1} theta2 is ${theta2} x=${x} y=${y} v=${v} sqrt is ${Math.sqrt(
-              v * v * v * v - g * (g * x * x + 2 * y * v * v)
-            )}`
-          );
-          // ok, we have a firing solution. rotate to the right angle and fire
-          const rot = tower.stoneTower.cannon()!.rotation;
-          quat.identity(rot);
-          quat.rotateZ(rot, theta, rot);
-          const worldRot = quat.create();
-          mat4.getRotation(
-            mat4.mul(tower.world.transform, mat4.fromQuat(rot)),
-            worldRot
-          );
-          fireBullet(
-            EM,
-            2,
-            tower.stoneTower.cannon()!.world.position,
-            worldRot,
-            v,
-            0.02,
-            g,
-            2.0
-          );
-          tower.stoneTower.lastFired = res.time.time;
+        const zvelocity = targetVelocity[2];
+        const timeToZZero = -(towerSpaceTarget[2] / zvelocity);
+        if (timeToZZero < 0) {
+          // it's moving away, don't worry about it
+          continue;
         }
+
+        // what will the x position be, relative to the cannon, when z = 0?
+        const x =
+          towerSpaceTarget[0] +
+          targetVelocity[0] * timeToZZero -
+          tower.stoneTower.cannon()!.position[0];
+
+        // y is probably constant, but calculate it just for fun
+        const y =
+          towerSpaceTarget[1] +
+          targetVelocity[1] * timeToZZero -
+          tower.stoneTower.cannon()!.position[1];
+
+        console.log(`timeToZZero=${timeToZZero}`);
+
+        if (x < 0) {
+          // target is behind us, don't worry about it
+          continue;
+        }
+        // now, find the angle from our cannon.
+        const v = tower.stoneTower.projectileSpeed;
+        const g = 20.0 * 0.00001;
+        // https://en.wikipedia.org/wiki/Projectile_motion#Angle_%CE%B8_required_to_hit_coordinate_(x,_y)
+        const theta1 = Math.atan(
+          (v * v + Math.sqrt(v * v * v * v - g * (g * x * x + 2 * y * v * v))) /
+            (g * x)
+        );
+        const theta2 = Math.atan(
+          (v * v - Math.sqrt(v * v * v * v - g * (g * x * x + 2 * y * v * v))) /
+            (g * x)
+        );
+
+        // prefer positive theta
+        let theta = theta1;
+        if (theta2 > theta1) theta = theta2;
+        if (isNaN(theta) || theta > MAX_THETA) {
+          // no firing solution--target is too far
+          console.log("target will be in sights but too far away");
+          continue;
+        }
+        console.log(
+          `Firing solution found, theta1 is ${theta1} theta2 is ${theta2} x=${x} y=${y} v=${v} sqrt is ${Math.sqrt(
+            v * v * v * v - g * (g * x * x + 2 * y * v * v)
+          )}`
+        );
+        // ok, we have a firing solution. rotate to the right angle
+        const rot = tower.stoneTower.cannon()!.rotation;
+        quat.identity(rot);
+        quat.rotateZ(rot, theta, rot);
+
+        // OK, now we just need to know whether our time-of-flight matches up with the target's velocity
+        const flightTime = x / (v * Math.cos(theta));
+        // fire if we are within a couple of frames
+        console.log(`flightTime=${flightTime} timeToZZero=${timeToZZero}`);
+        if (Math.abs(flightTime - timeToZZero) > 32) {
+          continue;
+        }
+        const worldRot = quat.create();
+        mat4.getRotation(
+          mat4.mul(tower.world.transform, mat4.fromQuat(rot)),
+          worldRot
+        );
+        fireBullet(
+          EM,
+          2,
+          tower.stoneTower.cannon()!.world.position,
+          worldRot,
+          v,
+          0.02,
+          g,
+          2.0
+        );
+        tower.stoneTower.lastFired = res.time.time;
       }
     }
+    vec3.copy(__previousPartyPos, target);
+    __prevTime = res.time.time;
   },
   "stoneTowerAttack"
 );

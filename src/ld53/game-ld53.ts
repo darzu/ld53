@@ -93,7 +93,7 @@ PERF:
 */
 
 const DBG_PLAYER = false;
-const SHIP_START_POS = V(140, 0, 0);
+const SHIP_START_POS = V(100, 0, -100);
 
 // world map is centered around 0,0
 const WORLD_WIDTH = 1024; // width runs +z
