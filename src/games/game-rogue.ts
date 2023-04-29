@@ -933,11 +933,11 @@ export async function initRogueGame(em: EntityManager, hosting: boolean) {
         }
 
         if (healthPercent < 20) {
-          alert(
-            `You've been sunk! You killed ${pirateKills} and lasted ${(
-              res.time.time / 1000
-            ).toFixed(1)} seconds. Thanks for playing! Refresh to try again.`
-          );
+          // alert(
+          //   `You've been sunk! You killed ${pirateKills} and lasted ${(
+          //     res.time.time / 1000
+          //   ).toFixed(1)} seconds. Thanks for playing! Refresh to try again.`
+          // );
           gameplaySystems.length = 0;
         }
       },

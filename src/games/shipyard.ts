@@ -30,7 +30,11 @@ import { createGizmoMesh } from "../gizmos.js";
 import { EM } from "../entity-manager.js";
 import { PositionDef } from "../physics/transform.js";
 import { RenderableConstructDef } from "../render/renderer-ecs.js";
-import { createAABB, updateAABBWithPoint } from "../physics/aabb.js";
+import {
+  createAABB,
+  getSizeFromAABB,
+  updateAABBWithPoint,
+} from "../physics/aabb.js";
 
 const numRibSegs = 8;
 
@@ -195,12 +199,13 @@ export function createHomeShip(): HomeShip {
 
   // KEEL
   // TODO(@darzu): IMPL keel!
-  {
-    const keelWidth = 0.7;
-    const keelDepth = 1.2;
-    builder.width = keelWidth;
-    builder.depth = keelDepth;
+  const keelWidth = 0.7;
+  const keelDepth = 1.2;
+  builder.width = keelWidth;
+  builder.depth = keelDepth;
 
+  let keelPath: Path;
+  {
     // const keelTempAABB = getAABBFromMesh(keelTemplate);
     // console.dir(keelTempAABB);
     let keelTemplate2 = transformMesh(
@@ -212,23 +217,30 @@ export function createHomeShip(): HomeShip {
         [5, 5, 5]
       )
     ) as Mesh;
-    const keelPath: Path = getPathFrom2DQuadMesh(keelTemplate2, [0, 0, 1]);
+
+    keelPath = getPathFrom2DQuadMesh(keelTemplate2, [0, 0, 1]);
+
+    // fix keel orientation
     // r->g, g->b, b->r
     const fixRot = quat.fromMat3(mat3.fromValues(0, 1, 0, 0, 0, 1, 1, 0, 0));
     keelPath.forEach((p) => quat.mul(p.rot, fixRot, p.rot));
 
-    const pathAABB = createAABB();
-    keelPath.forEach((p) => updateAABBWithPoint(pathAABB, p.pos));
-    translatePath(keelPath, [0, -pathAABB.min[1], 0]);
+    const tempAABB = createAABB();
+    keelPath.forEach((p) => updateAABBWithPoint(tempAABB, p.pos));
+    translatePath(keelPath, [0, -tempAABB.min[1], 0]);
 
     dbgPathWithGizmos(keelPath);
-
-    appendBoard(builder.mesh, {
-      path: keelPath,
-      width: keelWidth,
-      depth: keelDepth,
-    });
   }
+
+  const keelAABB = createAABB();
+  keelPath.forEach((p) => updateAABBWithPoint(keelAABB, p.pos));
+  const keelSize = getSizeFromAABB(keelAABB, vec3.create());
+
+  appendBoard(builder.mesh, {
+    path: keelPath,
+    width: keelWidth,
+    depth: keelDepth,
+  });
 
   // RIBS
   const ribWidth = 0.5;
@@ -236,7 +248,10 @@ export function createHomeShip(): HomeShip {
   builder.width = ribWidth;
   builder.depth = ribDepth;
   const ribCount = 10;
-  const ribSpace = 3;
+  // const ribSpace = 3;
+
+  const keelLength = keelSize[0];
+  const ribSpace = keelLength / (ribCount + 1);
 
   for (let i = 0; i < ribCount; i++) {
     const p = translatePath(makeRibPath(i), V(i * ribSpace, 0, 0));
