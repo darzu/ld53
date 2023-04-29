@@ -3,6 +3,8 @@ import { ColorDef } from "../color-ecs.js";
 import { ENDESGA16 } from "../color/palettes.js";
 import { createRef, Ref } from "../em_helpers.js";
 import { EM, Entity, EntityW } from "../entity-manager.js";
+import { fireBullet } from "../games/bullet.js";
+import { PartyDef } from "../games/party.js";
 import { jitter } from "../math.js";
 import {
   AABB,
@@ -20,7 +22,8 @@ import {
 } from "../physics/transform.js";
 import { Mesh } from "../render/mesh.js";
 import { RenderableConstructDef } from "../render/renderer-ecs.js";
-import { mat4, tV, V, vec3 } from "../sprig-matrix.js";
+import { mat4, tV, V, vec3, quat } from "../sprig-matrix.js";
+import { TimeDef } from "../time.js";
 
 interface Brick {
   aabb: AABB;
@@ -39,6 +42,9 @@ interface Tower {
   rows: Array<TowerRow>;
   mesh: Mesh;
   cannon: Ref<[typeof PositionDef, typeof RotationDef, typeof WorldFrameDef]>;
+  lastFired: number;
+  fireRate: number;
+  projectileSpeed: number;
 }
 
 export const StoneTowerDef = EM.defineComponent(
@@ -46,7 +52,9 @@ export const StoneTowerDef = EM.defineComponent(
   (
     cannon: EntityW<
       [typeof PositionDef, typeof RotationDef, typeof WorldFrameDef]
-    >
+    >,
+    fireRate = 1000,
+    projectileSpeed = 0.1
   ) =>
     ({
       rows: [],
@@ -63,6 +71,9 @@ export const StoneTowerDef = EM.defineComponent(
         createRef<
           [typeof PositionDef, typeof RotationDef, typeof WorldFrameDef]
         >(cannon),
+      lastFired: 0,
+      fireRate,
+      projectileSpeed,
     } as Tower)
 );
 
@@ -328,3 +339,87 @@ export async function createStoneTower(
   EM.ensureComponentOn(tower, RenderableConstructDef, mesh);
   return tower;
 }
+
+let __frame = 0;
+
+const EPSILON = 1.0;
+
+EM.registerSystem(
+  [StoneTowerDef, WorldFrameDef],
+  [TimeDef, PartyDef],
+  (es, res) => {
+    __frame++;
+    const target = res.party.pos;
+    if (!target) return;
+    for (let tower of es) {
+      if (
+        tower.stoneTower.lastFired + tower.stoneTower.fireRate <=
+        res.time.time
+      ) {
+        // we're able to fire. should we?
+        const towerSpaceTarget = vec3.transformMat4(
+          target,
+          mat4.invert(tower.world.transform)
+        );
+
+        // is target at Z = 0 in tower-space?
+        console.log(`target Z=${towerSpaceTarget[2]}`);
+        if (Math.abs(towerSpaceTarget[2]) < EPSILON) {
+          // now, find the angle from our cannon.
+          const x =
+            towerSpaceTarget[0] - tower.stoneTower.cannon()!.position[0];
+          const y =
+            towerSpaceTarget[1] - tower.stoneTower.cannon()!.position[1];
+          const v = tower.stoneTower.projectileSpeed;
+          const g = 7.0 * 0.00001;
+          // https://en.wikipedia.org/wiki/Projectile_motion#Angle_%CE%B8_required_to_hit_coordinate_(x,_y)
+          const theta1 = Math.atan(
+            (v * v +
+              Math.sqrt(v * v * v * v - g * (g * x * x + 2 * y * v * v))) /
+              (g * x)
+          );
+          const theta2 = Math.atan(
+            (v * v -
+              Math.sqrt(v * v * v * v - g * (g * x * x + 2 * y * v * v))) /
+              (g * x)
+          );
+
+          // prefer positive theta
+          let theta = theta1;
+          if (theta2 > 0) theta = theta2;
+          if (isNaN(theta)) {
+            // no firing solution--target is too far
+            console.log("target is in sights but too far away");
+            continue;
+          }
+          console.log(
+            `Firing, theta1 is ${theta1} theta2 is ${theta2} x=${x} y=${y} v=${v} sqrt is ${Math.sqrt(
+              v * v * v * v - g * (g * x * x + 2 * y * v * v)
+            )}`
+          );
+          // ok, we have a firing solution. rotate to the right angle and fire
+          const rot = tower.stoneTower.cannon()!.rotation;
+          quat.identity(rot);
+          quat.rotateZ(rot, theta, rot);
+          const worldRot = quat.create();
+          mat4.getRotation(
+            mat4.mul(tower.world.transform, mat4.fromQuat(rot)),
+            worldRot
+          );
+          fireBullet(
+            EM,
+            2,
+            tower.stoneTower.cannon()!.world.position,
+            worldRot,
+            v,
+            0.02,
+            g,
+            2.0
+          );
+          tower.stoneTower.lastFired = res.time.time;
+        }
+      }
+    }
+  },
+  "stoneTowerAttack"
+);
