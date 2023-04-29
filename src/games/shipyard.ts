@@ -30,6 +30,7 @@ import { createGizmoMesh } from "../gizmos.js";
 import { EM } from "../entity-manager.js";
 import { PositionDef } from "../physics/transform.js";
 import { RenderableConstructDef } from "../render/renderer-ecs.js";
+import { createAABB, updateAABBWithPoint } from "../physics/aabb.js";
 
 const numRibSegs = 8;
 
@@ -200,22 +201,25 @@ export function createHomeShip(): HomeShip {
     builder.width = keelWidth;
     builder.depth = keelDepth;
 
-    const keelTempAABB = getAABBFromMesh(keelTemplate);
-    console.dir(keelTempAABB);
+    // const keelTempAABB = getAABBFromMesh(keelTemplate);
+    // console.dir(keelTempAABB);
     let keelTemplate2 = transformMesh(
       keelTemplate,
       mat4.fromRotationTranslationScale(
         quat.rotateX(quat.identity(), Math.PI / 2),
-        // [0, 0, 0],
-        vec3.negate(keelTempAABB.min),
-        [6, 6, 6]
+        [0, 0, 0],
+        // vec3.scale(vec3.negate(keelTempAABB.min), 6),
+        [5, 5, 5]
       )
     ) as Mesh;
     const keelPath: Path = getPathFrom2DQuadMesh(keelTemplate2, [0, 0, 1]);
-    // translatePath(keelPath, [0, 30, 0]);
     // r->g, g->b, b->r
     const fixRot = quat.fromMat3(mat3.fromValues(0, 1, 0, 0, 0, 1, 1, 0, 0));
     keelPath.forEach((p) => quat.mul(p.rot, fixRot, p.rot));
+
+    const pathAABB = createAABB();
+    keelPath.forEach((p) => updateAABBWithPoint(pathAABB, p.pos));
+    translatePath(keelPath, [0, -pathAABB.min[1], 0]);
 
     dbgPathWithGizmos(keelPath);
 

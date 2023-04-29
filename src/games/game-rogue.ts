@@ -185,7 +185,7 @@ export async function initRogueGame(em: EntityManager, hosting: boolean) {
   const groundMesh = cloneMesh(res.assets.hex.mesh);
   transformMesh(
     groundMesh,
-    mat4.fromRotationTranslationScale(quat.IDENTITY, [0, -2, 0], [20, 2, 20])
+    mat4.fromRotationTranslationScale(quat.IDENTITY, [0, -4, 0], [20, 2, 20])
   );
   em.ensureComponentOn(ground, RenderableConstructDef, groundMesh);
   em.ensureComponentOn(ground, ColorDef, ENDESGA16.blue);
