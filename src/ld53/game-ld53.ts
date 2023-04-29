@@ -92,7 +92,8 @@ PERF:
 [ ] reduce triangles on ocean
 */
 
-const DBG_PLAYER = true;
+const DBG_PLAYER = false;
+const SHIP_START_POS = V(140, 0, 0);
 
 // world map is centered around 0,0
 const WORLD_WIDTH = 1024; // width runs +z
@@ -307,7 +308,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   // move down
   // ship.position[2] = -WORLD_SIZE * 0.5 * 0.6;
   level2DtoWorld3D(level.levelMap.startPos, 15, ship.position);
-  // vec3.copy(ship.position, SHIP_START_POS);
+  vec3.copy(ship.position, SHIP_START_POS);
   em.requireSystem("sailShip");
   em.requireSystem("shipParty");
 
@@ -476,16 +477,16 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   if (DBG_PLAYER) text.lowerText = "";
 
   // Spawn towers
-  {
-    const tower3DPoses = level.levelMap.towers.map((tPos) =>
-      level2DtoWorld3D(
-        tPos,
-        20, // TODO(@darzu): lookup from heightmap?
-        vec3.create()
-      )
-    );
-    await startTowers(tower3DPoses);
-  }
+  // {
+  //   const tower3DPoses = level.levelMap.towers.map((tPos) =>
+  //     level2DtoWorld3D(
+  //       tPos,
+  //       20, // TODO(@darzu): lookup from heightmap?
+  //       vec3.create()
+  //     )
+  //   );
+  //   await startTowers(tower3DPoses);
+  // }
 
   // world gizmo
   const worldGizmo = EM.new();
@@ -513,6 +514,8 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   let stoneTower = await createStoneTower(100, 20, 5, 2, 2.5, false);
   EM.ensureComponentOn(stoneTower, PositionDef, V(0, -5, 0));
   EM.ensureComponentOn(stoneTower, ColorDef, ENDESGA16.darkGray);
+
+  EM.requireSystem("stoneTowerAttack");
 }
 
 async function createPlayer() {

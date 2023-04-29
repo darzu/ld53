@@ -214,7 +214,7 @@ export async function fireBullet(
     if (_nextBulletIdx >= _bulletPool.length) _nextBulletIdx = 0;
   }
 
-  let bulletAxis = V(0, 0, -1);
+  let bulletAxis = V(1, 0, 0);
   vec3.transformQuat(bulletAxis, rotation, bulletAxis);
   vec3.normalize(bulletAxis, bulletAxis);
   const linearVelocity = vec3.scale(bulletAxis, speed, vec3.create());
