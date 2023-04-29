@@ -75,6 +75,7 @@ import { GrassCutTexPtr, grassPoolPtr } from "../smol/std-grass.js";
 import { WindDef } from "../smol/wind.js";
 import { createShip, ShipDef } from "../smol/ship.js";
 import { SAIL_FURL_RATE } from "../smol/sail.js";
+import { createStoneTower } from "./stone.js";
 
 /*
 NOTES:
@@ -91,7 +92,7 @@ PERF:
 [ ] reduce triangles on ocean
 */
 
-const DBG_PLAYER = false;
+const DBG_PLAYER = true;
 
 // world map is centered around 0,0
 const WORLD_WIDTH = 1024; // width runs +z
@@ -135,7 +136,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   let dbgGridCompose = createGridComposePipelines(dbgGrid);
 
   // TODO(@darzu): HACK. these have to be set before the CY instantiator runs.
-  outlineRender.fragOverrides!.lineWidth = 3.0;
+  outlineRender.fragOverrides!.lineWidth = 1.0;
 
   const res = await em.whenResources(
     AssetsDef,
@@ -503,6 +504,14 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     }
   }
   createGraph3D(vec3.add(worldGizmo.position, [50, 10, 50], V(0, 0, 0)), data);
+  let stoneTower = EM.new();
+  EM.ensureComponentOn(stoneTower, PositionDef, V(0, 20, 0));
+  EM.ensureComponentOn(
+    stoneTower,
+    RenderableConstructDef,
+    createStoneTower(20, 100, 10, 5, 10, true)
+  );
+  EM.ensureComponentOn(stoneTower, ColorDef, ENDESGA16.lightGray);
 }
 
 async function createPlayer() {

@@ -4,7 +4,8 @@ import { assert } from "../util.js";
 import { getBytes } from "../webget.js";
 
 // const DEFAULT_MAP_PATH = "assets/ld52_maps/";
-const DEFAULT_MAP_PATH = "assets/smol_maps/";
+//const DEFAULT_MAP_PATH = "assets/smol_maps/";
+const DEFAULT_MAP_PATH = "assets/ld53_maps/";
 
 // export const MapPaths = [
 //   "map1",
