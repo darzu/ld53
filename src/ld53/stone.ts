@@ -1,4 +1,8 @@
-import { EM, Entity } from "../entity-manager.js";
+import { AssetsDef } from "../assets.js";
+import { ColorDef } from "../color-ecs.js";
+import { ENDESGA16 } from "../color/palettes.js";
+import { createRef, Ref } from "../em_helpers.js";
+import { EM, Entity, EntityW } from "../entity-manager.js";
 import { jitter } from "../math.js";
 import {
   AABB,
@@ -8,6 +12,12 @@ import {
   pointInAABB,
   updateAABBWithPoint,
 } from "../physics/aabb.js";
+import { WorldFrameDef } from "../physics/nonintersection.js";
+import {
+  PhysicsParentDef,
+  PositionDef,
+  RotationDef,
+} from "../physics/transform.js";
 import { Mesh } from "../render/mesh.js";
 import { RenderableConstructDef } from "../render/renderer-ecs.js";
 import { mat4, tV, V, vec3 } from "../sprig-matrix.js";
@@ -28,11 +38,16 @@ interface TowerRow {
 interface Tower {
   rows: Array<TowerRow>;
   mesh: Mesh;
+  cannon: Ref<[typeof PositionDef, typeof RotationDef, typeof WorldFrameDef]>;
 }
 
 export const StoneTowerDef = EM.defineComponent(
   "stoneTower",
-  () =>
+  (
+    cannon: EntityW<
+      [typeof PositionDef, typeof RotationDef, typeof WorldFrameDef]
+    >
+  ) =>
     ({
       rows: [],
       mesh: {
@@ -44,6 +59,10 @@ export const StoneTowerDef = EM.defineComponent(
         usesProvoking: true,
         dbgName: "tower",
       } as Mesh,
+      cannon:
+        createRef<
+          [typeof PositionDef, typeof RotationDef, typeof WorldFrameDef]
+        >(cannon),
     } as Tower)
 );
 
@@ -166,8 +185,7 @@ function knockOutBricks(tower: Tower, aabb: AABB, shrink = false): number {
   return bricksKnockedOut;
 }
 
-export function createStoneTower(
-  tower: Entity,
+export async function createStoneTower(
   height: number,
   baseRadius: number,
   approxBrickWidth: number,
@@ -175,7 +193,22 @@ export function createStoneTower(
   brickDepth: number,
   coolMode: boolean
 ) {
-  EM.ensureComponentOn(tower, StoneTowerDef);
+  const res = await EM.whenResources(AssetsDef);
+  const tower = EM.new();
+  const cannon = EM.new();
+  EM.ensureComponentOn(
+    cannon,
+    RenderableConstructDef,
+    res.assets.ld53_cannon.proto
+  );
+  EM.ensureComponentOn(cannon, PositionDef);
+  EM.ensureComponentOn(cannon, ColorDef, V(0.05, 0.05, 0.05));
+  EM.ensureComponentOn(cannon, RotationDef);
+  EM.ensureComponentOn(cannon, PhysicsParentDef, tower.id);
+  EM.ensureComponentOn(cannon, WorldFrameDef);
+  vec3.set(baseRadius - 2, height * 0.7, 0, cannon.position);
+
+  EM.ensureComponentOn(tower, StoneTowerDef, cannon);
   const mesh = tower.stoneTower.mesh;
 
   function calculateNAndBrickWidth(
@@ -293,4 +326,5 @@ export function createStoneTower(
   };
   knockOutBricks(tower.stoneTower, windowAABB, true);
   EM.ensureComponentOn(tower, RenderableConstructDef, mesh);
+  return tower;
 }
