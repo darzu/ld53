@@ -379,6 +379,12 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     g.cameraFollow.yawOffset = 0.0;
     g.cameraFollow.pitchOffset = -1.009;
 
+    vec3.copy(g.position, [2.47, 46.5, -22.78]);
+    quat.copy(g.rotation, [0.0, -0.98, 0.0, -0.21]);
+    vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
+    g.cameraFollow.yawOffset = 0.0;
+    g.cameraFollow.pitchOffset = -0.623;
+
     em.registerSystem(
       [GhostDef, WorldFrameDef, ColliderDef],
       [InputsDef, CanvasDef],
@@ -509,9 +515,9 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   EM.ensureComponentOn(
     stoneTower,
     RenderableConstructDef,
-    createStoneTower(20, 20, 10, 5, 10, false)
+    createStoneTower(100, 20, 5, 2, 2.5, false)
   );
-  EM.ensureComponentOn(stoneTower, ColorDef, ENDESGA16.lightGray);
+  EM.ensureComponentOn(stoneTower, ColorDef, ENDESGA16.darkGray);
 }
 
 async function createPlayer() {

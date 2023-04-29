@@ -3,10 +3,10 @@ import { Mesh } from "../render/mesh.js";
 import { mat4, tV, V, vec3 } from "../sprig-matrix.js";
 
 export function createStoneTower(
-  rows: number,
+  height: number,
   baseRadius: number,
   approxBrickWidth: number,
-  brickHeight: number,
+  approxBrickHeight: number,
   brickDepth: number,
   coolMode: boolean
 ): Mesh {
@@ -29,19 +29,22 @@ export function createStoneTower(
     return [n, brickWidth];
   }
 
+  const rows = Math.floor(height / approxBrickHeight);
+  const brickHeight = height / rows;
+
   const cursor = mat4.create();
-  function applyCursor(v: vec3): vec3 {
+  function applyCursor(v: vec3, distort: boolean = false): vec3 {
     vec3.transformMat4(v, cursor, v);
-    /*
-    vec3.add(
-      v,
-      [
-        jitter(brickWidth / 10),
-        jitter(brickHeight / 10),
-        jitter(brickDepth / 10),
-      ],
-      v
-    );*/
+    if (distort)
+      vec3.add(
+        v,
+        [
+          jitter(approxBrickWidth / 10),
+          jitter(brickHeight / 10),
+          jitter(brickDepth / 10),
+        ],
+        v
+      );
     return v;
   }
   function appendBrick(brickWidth: number, brickDepth: number) {
@@ -49,15 +52,15 @@ export function createStoneTower(
     // base
     mesh.pos.push(applyCursor(V(0, 0, 0)));
     mesh.pos.push(applyCursor(V(0 + brickWidth, 0, 0)));
-    mesh.pos.push(applyCursor(V(0, 0, 0 + brickDepth)));
-    mesh.pos.push(applyCursor(V(0 + brickWidth, 0, 0 + brickDepth)));
+    mesh.pos.push(applyCursor(V(0, 0, 0 + brickDepth), true));
+    mesh.pos.push(applyCursor(V(0 + brickWidth, 0, 0 + brickDepth), true));
 
     //top
     mesh.pos.push(applyCursor(V(0, 0 + brickHeight, 0)));
     mesh.pos.push(applyCursor(V(0 + brickWidth, 0 + brickHeight, 0)));
-    mesh.pos.push(applyCursor(V(0, 0 + brickHeight, 0 + brickDepth)));
+    mesh.pos.push(applyCursor(V(0, 0 + brickHeight, 0 + brickDepth), true));
     mesh.pos.push(
-      applyCursor(V(0 + brickWidth, 0 + brickHeight, 0 + brickDepth))
+      applyCursor(V(0 + brickWidth, 0 + brickHeight, 0 + brickDepth), true)
     );
 
     // base
@@ -72,6 +75,11 @@ export function createStoneTower(
     mesh.quad.push(V(index + 2, index + 3, index + 3 + 4, index + 2 + 4));
     mesh.quad.push(V(index + 1, index + 1 + 4, index + 3 + 4, index + 3));
     //
+    const brightness = Math.random() * 0.05;
+    const color = V(brightness, brightness, brightness);
+    for (let i = 0; i < 6; i++) {
+      mesh.colors.push(color);
+    }
   }
 
   let rotation = 0;
@@ -97,7 +105,7 @@ export function createStoneTower(
       }
     }
   }
-  mesh.quad.forEach(() => mesh.colors.push(V(0, 0, 0)));
+  //mesh.quad.forEach(() => mesh.colors.push(V(0, 0, 0)));
   mesh.quad.forEach((_, i) => mesh.surfaceIds.push(i + 1));
   return mesh;
 }
