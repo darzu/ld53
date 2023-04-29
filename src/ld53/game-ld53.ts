@@ -91,7 +91,7 @@ PERF:
 [ ] reduce triangles on ocean
 */
 
-const DBG_PLAYER = true;
+const DBG_PLAYER = false;
 
 // world map is centered around 0,0
 const WORLD_WIDTH = 1024; // width runs +z
@@ -194,7 +194,6 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   const score = em.addResource(ScoreDef);
   em.requireSystem("updateScoreDisplay");
   em.requireSystem("detectGameEnd");
-
   // start map
   await setMap(em, "obstacles1");
 
@@ -254,66 +253,6 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   em.ensureComponentOn(hm, ColorDef, ENDESGA16.lightGray);
   // TODO(@darzu): update terra from SDF
 
-  // // reference columns
-  // for (let i = 0; i < 50; i++) {
-  //   const refCol = em.new();
-  //   em.ensureComponentOn(
-  //     refCol,
-  //     RenderableConstructDef,
-  //     res.assets.unitCube.proto
-  //   );
-  //   em.ensureComponentOn(refCol, ScaleDef, V(1, 100, 1));
-  //   em.ensureComponentOn(refCol, PositionDef);
-  //   vec3.copy(refCol.position, SHIP_START_POS);
-  //   refCol.position[1] = -50;
-  //   refCol.position[2] += i * 2 + 30;
-  //   em.ensureComponentOn(refCol, ColorDef, V(0.1, 1, 0.1));
-  // }
-  if (!"true")
-    for (let r = 0; r < 2; r++)
-      for (let i = 0; i < 8; i++) {
-        const color = Object.values(ENDESGA16)[i + r * 8];
-        const bigCube = em.new();
-        const i2 = Math.floor(i / 2) * 2.0;
-        const even = i % 2 === 0 ? 1 : 0;
-        em.ensureComponentOn(
-          bigCube,
-          RenderableConstructDef,
-          even ? res.assets.ball.proto : res.assets.cube.proto
-        );
-        em.ensureComponentOn(bigCube, ScaleDef, V(50, 50, 50));
-        em.ensureComponentOn(
-          bigCube,
-          RotationDef,
-          quat.fromEuler(
-            Math.random() * Math.PI,
-            Math.random() * Math.PI,
-            Math.random() * Math.PI,
-            quat.create()
-          )
-        );
-        em.ensureComponentOn(
-          bigCube,
-          AngularVelocityDef,
-          vec3.scale(randNormalVec3(vec3.tmp()), 0.0005, vec3.create())
-        );
-        em.ensureComponentOn(
-          bigCube,
-          PositionDef,
-          V(
-            // i2 * 30 + even * 100 - 100 - r * 50,
-            jitter(WORLD_HEIGHT * 0.5),
-            r * 100,
-            // i2 * 30 - even * 100 - 100 + r * 50
-            jitter(WORLD_WIDTH * 0.5)
-          )
-        );
-        // em.ensureComponentOn(bigCube, ColorDef, randColor());
-        em.ensureComponentOn(bigCube, ColorDef, color);
-      }
-
-  // skybox?
-
   // sky dome?
   const SKY_HALFSIZE = 1000;
   const domeMesh = makeDome(16, 8, SKY_HALFSIZE);
@@ -355,104 +294,6 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   // initOcean(oceanMesh, V(0.1, 0.3, 0.8));
   initOcean(oceanMesh, ENDESGA16.blue);
   await em.whenResources(OceanDef); // TODO(@darzu): need to wait?
-
-  // ground
-  // const ground = em.new();
-  // const groundMesh = cloneMesh(res.assets.unitCube.mesh);
-  // transformMesh(
-  //   groundMesh,
-  //   mat4.fromScaling(V(WORLD_HEIGHT, 1.0, WORLD_WIDTH))
-  // );
-  // em.ensureComponentOn(ground, RenderableConstructDef, groundMesh);
-  // em.ensureComponentOn(ground, ColorDef, V(0.1, 0.5, 0.1));
-  // // em.set(ground, ColorDef, ENDESGA16.darkGreen);
-  // // em.ensureComponentOn(p, ColorDef, [0.2, 0.3, 0.2]);
-  // em.ensureComponentOn(
-  //   ground,
-  //   PositionDef,
-  //   V(-WORLD_HEIGHT * 0.5, -1.1, -WORLD_WIDTH * 0.5)
-  // );
-  // em.ensureComponentOn(plane, PositionDef, [0, -5, 0]);
-
-  // grass
-  const lod1: GrassTilesetOpts = {
-    bladeW: 0.2,
-    // bladeH: 3,
-    // bladeH: 1.6,
-    // bladeH: 2.6,
-    // bladeH: 3.2,
-    // bladeH: 1.5,
-    // bladeH: 1.8,
-    bladeH: 4.2,
-    // bladeH: 1.8,
-    // TODO(@darzu): debugging
-    // spacing: 1,
-    // tileSize: 4,
-    // spacing: 0.5,
-    spacing: 0.5,
-    // spacing: 0.3,
-    tileSize: 16,
-    // tileSize: 10,
-    tilesPerSide: 5,
-  };
-  const lod2: GrassTilesetOpts = {
-    ...lod1,
-    bladeH: lod1.bladeH * 1.4,
-    spacing: lod1.spacing * 2,
-    tileSize: lod1.tileSize * 2,
-  };
-  const lod3: GrassTilesetOpts = {
-    ...lod1,
-    bladeH: lod1.bladeH * 1.6,
-    spacing: lod1.spacing * 4,
-    tileSize: lod1.tileSize * 4,
-  };
-  const lod4: GrassTilesetOpts = {
-    ...lod1,
-    tilesPerSide: 8,
-    bladeH: lod1.bladeH * 1.8,
-    spacing: lod1.spacing * 8,
-    tileSize: lod1.tileSize * 8,
-  };
-  const lod5: GrassTilesetOpts = {
-    ...lod1,
-    tilesPerSide: 8,
-    bladeW: lod1.bladeW * 2,
-    bladeH: lod1.bladeH * 2,
-    spacing: lod1.spacing * 32,
-    tileSize: lod1.tileSize * 32,
-  };
-  const maxBladeDraw = ((lod1.tilesPerSide - 1) / 2) * lod1.tileSize;
-  const tileOpts: GrassTileOpts = {
-    ...lod1,
-    maxBladeDraw,
-  };
-  const grMesh = createGrassTile(tileOpts);
-  const gr = em.new();
-  em.ensureComponentOn(
-    gr,
-    RenderableConstructDef,
-    grMesh,
-    undefined,
-    // false,
-    undefined,
-    undefined,
-    grassPoolPtr
-    // true
-  );
-  em.ensureComponentOn(gr, ColorDef, randColor());
-  em.ensureComponentOn(gr, PositionDef);
-
-  // set
-  const ts = await Promise.all([
-    createGrassTileset(lod1),
-    createGrassTileset(lod2),
-    createGrassTileset(lod3),
-    createGrassTileset(lod4),
-    createGrassTileset(lod5),
-  ]);
-
-  console.log(`num grass tris: ${sum(ts.map((t) => t.numTris))}`);
 
   em.addResource(WindDef);
   em.requireSystem("changeWind");
@@ -497,8 +338,6 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   // );
   // em.requireSystem("shipBouyancy");
 
-  // dbg ghost
-
   // player
   if (!DBG_PLAYER) {
     const player = await createPlayer();
@@ -532,40 +371,12 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
       aabb: res.assets.ball.aabb,
     });
 
-    // tower close up:
-    // vec3.copy(g.position, [-103.66, 32.56, -389.96]);
-    // quat.copy(g.rotation, [0.0, -1.0, 0.0, -0.09]);
-    // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
-    // g.cameraFollow.yawOffset = 0.0;
-    // g.cameraFollow.pitchOffset = -0.423;
-
     // high up:
-    // vec3.copy(g.position, [-140.25, 226.5, -366.78]);
-    // quat.copy(g.rotation, [0.0, -0.99, 0.0, 0.15]);
-    // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
-    // g.cameraFollow.yawOffset = 0.0;
-    // g.cameraFollow.pitchOffset = -1.009;
-
-    // top down landscape:
-    // vec3.copy(g.position, [-357.47, 342.5, -35.34]);
-    // quat.copy(g.rotation, [0.0, -0.71, 0.0, 0.71]);
-    // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
-    // g.cameraFollow.yawOffset = 0.0;
-    // g.cameraFollow.pitchOffset = -1.098;
-
-    // tower 1 close up
-    vec3.copy(g.position, [-157.32, 54.5, -328.04]);
-    quat.copy(g.rotation, [0.0, -0.7, 0.0, 0.72]);
+    vec3.copy(g.position, [-140.25, 226.5, -366.78]);
+    quat.copy(g.rotation, [0.0, -0.99, 0.0, 0.15]);
     vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
     g.cameraFollow.yawOffset = 0.0;
-    g.cameraFollow.pitchOffset = -0.576;
-
-    // world origin
-    // vec3.copy(g.position, [-223.25, 40.5, -432.01]);
-    // quat.copy(g.rotation, [0.0, -0.58, 0.0, 0.81]);
-    // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
-    // g.cameraFollow.yawOffset = 0.0;
-    // g.cameraFollow.pitchOffset = -0.378;
+    g.cameraFollow.pitchOffset = -1.009;
 
     em.registerSystem(
       [GhostDef, WorldFrameDef, ColliderDef],
@@ -580,92 +391,11 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
       "smolGhost"
     );
     EM.requireGameplaySystem("smolGhost");
-
-    // em.registerSystem(
-    //   [GhostDef, WorldFrameDef],
-    //   [PartyDef],
-    //   async (ps, res) => {
-    //     if (!ps.length) return;
-    //     const ghost = ps[0];
-    //     vec3.copy(res.party.pos, ghost.world.position);
-    //   },
-    //   "smolGhostParty"
-    // );
-    // EM.requireGameplaySystem("smolGhostParty");
   }
-
-  // update grass
-  EM.registerSystem(
-    [CameraFollowDef, WorldFrameDef],
-    [],
-    (es, res) => {
-      const player = es[0];
-      // console.log(player.world.position);
-      // const player = EM.findEntity(res.localPlayer.playerId, [WorldFrameDef]);
-      if (player) for (let t of ts) t.update(player.world.position);
-    },
-    "updateGrass"
-  );
-  EM.requireSystem("updateGrass");
-
-  const { renderer } = await EM.whenResources(RendererDef);
-  const grassCutTex = renderer.renderer.getCyResource(GrassCutTexPtr)!;
-  assert(grassCutTex);
-  const bytesPerVal = texTypeToBytes[GrassCutTexPtr.format]!;
-  // grass cutting
-  // cutGrassAt(100, 100, 100, 100);
-  let f32BySize = new Map<number, Float32Array>();
-  function getArrayForBox(w: number, h: number): Float32Array {
-    let size = w * h * bytesPerVal;
-    // TODO(@darzu): PERF. Cache these!
-    let data = f32BySize.get(size);
-    if (!data) {
-      data = new Float32Array(size);
-      f32BySize.set(size, data);
-      if (VERBOSE_LOG)
-        console.log(
-          `tmp f32s using: ${(
-            sum(
-              [...f32BySize.values()].map(
-                (v) => v.length * Float32Array.BYTES_PER_ELEMENT
-              )
-            ) / 1024
-          ).toFixed(0)} kb`
-        );
-    }
-    data.fill(0);
-    return data;
-  }
-
-  // debug stuff
-  const { dev } = await EM.whenResources(DevConsoleDef);
-  // dev.showConsole = true;
-  // player.controllable.modes.canFly = true;
-
-  EM.registerSystem(
-    [],
-    [InputsDef],
-    (_, res) => {
-      // TODO(@darzu):
-      if (res.inputs.keyClicks[" "]) {
-        ship.ld52ship.cuttingEnabled = !ship.ld52ship.cuttingEnabled;
-      }
-    },
-    "cuttingOnOff"
-  );
-  EM.requireSystem("cuttingOnOff");
-
-  // TODO(@darzu): PERF. bad mem usage everywhere..
-  let worldCutData = new Float32Array(
-    grassCutTex.size[0] * grassCutTex.size[1]
-  );
-  assert(
-    WORLD_WIDTH === grassCutTex.size[0] && WORLD_HEIGHT === grassCutTex.size[1]
-  );
 
   score.onLevelEnd.push(() => {
-    worldCutData.fill(0.0);
-    grassCutTex.queueUpdate(worldCutData);
+    // worldCutData.fill(0.0);
+    // grassCutTex.queueUpdate(worldCutData);
     // vec3.set(0, 0, 0, ship.position);
     // vec3.copy(ship.position, SHIP_START_POS);
     level2DtoWorld3D(level.levelMap.startPos, 2, ship.position);
@@ -676,153 +406,6 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     ship.ld52ship.cuttingEnabled = true;
     ship.ld52ship.rudder()!.yawpitch.yaw = 0;
   });
-
-  EM.registerSystem(
-    [ShipDef, PositionDef, WorldFrameDef, PhysicsStateDef],
-    [PartyDef, LevelMapDef, ScoreDef],
-    (es, res) => {
-      if (!es.length) return;
-      const ship = es[0];
-
-      // if (!ship.ld52ship.cuttingEnabled) return;
-
-      assert(ship._phys.colliders.length >= 1);
-      const worldAABB = ship._phys.colliders[0].aabb;
-      const selfAABB = ship._phys.colliders[0].selfAABB;
-
-      // window texture
-      const winYi = worldXToTexY(worldAABB.min[0]);
-      const winXi = worldZToTexX(worldAABB.min[2]);
-      // NOTE: width is based on world Z and tex X
-      //       height is based on world X and tex Y
-      const winWi = Math.ceil(worldAABB.max[2] - worldAABB.min[2]);
-      const winHi = Math.ceil(worldAABB.max[0] - worldAABB.min[0]);
-
-      if (
-        winXi < 0 ||
-        grassCutTex.size[0] <= winXi + winWi ||
-        winYi < 0 ||
-        grassCutTex.size[1] <= winYi + winHi
-      ) {
-        res.score.shipHealth -= 320;
-        return;
-      }
-
-      const shipW = selfAABB.max[2] - selfAABB.min[2];
-      const shipH = selfAABB.max[0] - selfAABB.min[0];
-      let healthChanges = 0;
-      let cutPurple = 0;
-
-      let redHurt = false;
-
-      // update world texture data
-      // TODO(@darzu): PERF! track min/max window that is actually updated and send
-      //    smaller than window updates to GPU!
-      let minWinXi = Infinity;
-      let maxWinXi = -Infinity;
-      let minWinYi = Infinity;
-      let maxWinYi = -Infinity;
-      for (let xi = winXi; xi < winXi + winWi; xi++) {
-        for (let yi = winYi; yi < winYi + winHi; yi++) {
-          const z = texXToWorldZ(xi);
-          const x = texYToWorldX(yi);
-
-          // NOTE: PERF! we inlined all the dot products and cross products here for a
-          //  perf win.
-          // TODO(@darzu): make it easier to do this inlining automatically?
-          // let toParty = vec3.sub(V(x, 0, z), res.party.pos);
-          // let zDist = vec3.dot(toParty, res.party.dir);
-          // let partyX = vec3.cross(res.party.dir, V(0, 1, 0));
-          // let xDist = vec3.dot(toParty, partyX);
-          const toPartyX = x - res.party.pos[0];
-          const toPartyZ = z - res.party.pos[2];
-          const dirX = res.party.dir[0];
-          const dirZ = res.party.dir[2];
-          const zDist = toPartyX * dirX + toPartyZ * dirZ;
-          const xDist = toPartyX * -dirZ + toPartyZ * dirX;
-
-          if (Math.abs(zDist) < shipW * 0.5 && Math.abs(xDist) < shipH * 0.5) {
-            const idx = xi + yi * WORLD_WIDTH;
-
-            const color = res.levelMap.land[idx];
-
-            if (ship.ld52ship.cuttingEnabled) {
-              if (worldCutData[idx] < 1) {
-                // we are cutting this grass for the first time
-                if (color < 0.1) {
-                  // green
-                  // console.log("GREEN_HEALING");
-                  healthChanges += GREEN_HEALING;
-                } else if (color < 0.6) {
-                  // red
-                  // console.log("RED_DAMAGE_CUTTING");
-                  healthChanges -= RED_DAMAGE_CUTTING;
-                  redHurt = true;
-                } else {
-                  // purple
-                  cutPurple += 1;
-                }
-                minWinXi = Math.min(minWinXi, xi);
-                maxWinXi = Math.max(maxWinXi, xi);
-                minWinYi = Math.min(minWinYi, yi);
-                maxWinYi = Math.max(maxWinYi, yi);
-                worldCutData[idx] = 1;
-              }
-            } else {
-              if (0.1 < color && color < 0.6) {
-                // red
-                // console.log("RED_DAMAGE_NOT_CUTTING");
-                redHurt = true;
-              }
-            }
-          }
-        }
-      }
-
-      if (redHurt) {
-        healthChanges -= RED_DAMAGE_PER_FRAME;
-      }
-
-      // console.log(healthChanges);
-
-      res.score.shipHealth = Math.min(
-        res.score.shipHealth + healthChanges,
-        10000
-      );
-      res.score.cutPurple += cutPurple;
-
-      // copy from world texture data to update window
-      // NOTE: we shrink the window to only include what has changed
-      const hasUpdate = minWinXi <= maxWinXi && minWinYi <= maxWinYi;
-      // console.log(`hasUpdate: ${hasUpdate}`);
-      if (hasUpdate) {
-        const innerWinW = maxWinXi - minWinXi + 1;
-        const innerWinH = maxWinYi - minWinYi + 1;
-        const windowData = getArrayForBox(innerWinW, innerWinH);
-        for (let xi = minWinXi; xi <= maxWinXi; xi++) {
-          for (let yi = minWinYi; yi <= maxWinYi; yi++) {
-            const worldIdx = xi + yi * WORLD_WIDTH;
-            const val = worldCutData[worldIdx];
-            const winIdx = xi - minWinXi + (yi - minWinYi) * innerWinW;
-            windowData[winIdx] = val;
-          }
-        }
-        grassCutTex.queueUpdate(
-          windowData,
-          minWinXi,
-          minWinYi,
-          innerWinW,
-          innerWinH
-        );
-      }
-      // console.dir(data);
-
-      // rasterizeTri
-    },
-    "cutGrassUnderShip"
-  );
-  EM.requireSystem("cutGrassUnderShip");
-  EM.addConstraint(["detectGameEnd", "after", "cutGrassUnderShip"]);
 
   EM.registerSystem(
     [],
@@ -895,17 +478,6 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
       )
     );
     await startTowers(tower3DPoses);
-    // level.levelMap.towers.forEach((tPos) => {
-    //   const ball = em.new();
-    //   em.ensureComponentOn(ball, PositionDef);
-    //   ball.position[2] = texXToWorldZ(tPos[0]);
-    //   // TODO(@darzu): parameterize these transforms! Can/should we use matrices for these maybe?
-    //   ball.position[0] = texYToWorldX(WORLD_HEIGHT - 1 - tPos[1]);
-    //   ball.position[1] = 20;
-    //   em.ensureComponentOn(ball, ScaleDef, V(5, 5, 5));
-    //   em.ensureComponentOn(ball, RenderableConstructDef, res.assets.ball.proto);
-    //   em.ensureComponentOn(ball, ColorDef, ENDESGA16.yellow);
-    // });
   }
 
   // world gizmo
@@ -981,83 +553,3 @@ async function createPlayer() {
   EM.ensureComponentOn(p, PhysicsParentDef);
   return p;
 }
-
-// const wCorners = getAABBCornersTemp(selfAABB);
-// wCorners.forEach((p) => vec3.transformMat4(p, ship.world.transform, p));
-// wCorners.sort((a, b) => a[1] - b[1]); // sort by y, ascending
-// const quad = wCorners.slice(0, 4);
-// // assumes quad[0] and quad[3] are opposite corners
-// const tri1 = [quad[0], quad[3], quad[1]];
-// const tri2 = [quad[0], quad[3], quad[2]];
-
-// if (
-//   texX < 0 ||
-//   grassCutTex.size[0] <= texX + w ||
-//   texY < 0 ||
-//   grassCutTex.size[1] <= texY + h
-// ) {
-//   console.warn("out of bounds grass cut");
-//   return;
-// }
-// // data.fill(1);
-
-// const write = (wx: number, wy: number) => {
-//   // const xi = clamp(wx - orgX, 0, w - 1);
-//   // const yi = clamp(wy - orgZ, 0, h - 1);
-//   const xi = wx + WORLD_WIDTH / 2;
-//   const yi = wy + WORLD_HEIGHT / 2;
-//   const idx = Math.floor(xi + yi * WORLD_WIDTH);
-//   // const idx = xi + yi * w;
-//   // assert(
-//   //   0 <= idx && idx < data.length,
-//   //   `idx out of bounds: (${xi},${yi})=>${idx}`
-//   // );
-//   // console.log(idx);
-//   worldCut[idx] = 1.0;
-
-//   numCut++;
-// };
-
-// let numCut = 0;
-// // TODO(@darzu): make sure we're not unsetting stuff that's been set to 1 from prev frames!
-// // rasterizeTri(
-// //   [tri1[0][0], tri1[0][2]],
-// //   [tri1[1][0], tri1[1][2]],
-// //   [tri1[2][0], tri1[2][2]],
-// //   write
-// // );
-// rasterizeTri(
-//   [tri2[0][0], tri2[0][2]],
-//   [tri2[1][0], tri2[1][2]],
-//   [tri2[2][0], tri2[2][2]],
-//   write
-// );
-
-// // console.log(`numCut: ${numCut}`);
-
-// // console.dir({
-// //   texX,
-// //   texY,
-// //   w,
-// //   h,
-// //   orgX,
-// //   orgZ,
-// //   WORLD_WIDTH,
-// //   tri1,
-// //   tri2,
-// // });
-// // throw `stop`;
-// // update data
-// for (let wxi = texX; wxi < texX + w; wxi++) {
-//   for (let wyi = texY; wyi < texY + h; wyi++) {
-//     const wIdx = Math.floor(wxi + wyi * WORLD_WIDTH);
-//     // console.log(wIdx);
-//     const v = worldCut[wIdx];
-//     const dIdx = Math.floor(wxi - texX + (wyi - texY) * w);
-//     // assert(0 <= dIdx && dIdx < data.length, `idx out of bounds: ${dIdx}`);
-//     // data[dIdx] = 1.0;
-//     // if (v > 0.1) console.log(dIdx);
-//     // console.log(dIdx);
-//     data[dIdx] = v;
-//   }
-// }
