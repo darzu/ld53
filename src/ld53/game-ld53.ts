@@ -409,7 +409,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     // vec3.set(0, 0, 0, ship.position);
     // vec3.copy(ship.position, SHIP_START_POS);
     const level = await em.whenResources(LevelMapDef);
-    level2DtoWorld3D(level.levelMap.startPos, 2, ship.position);
+    level2DtoWorld3D(level.levelMap.startPos, 8, ship.position);
     quat.identity(ship.rotation);
     vec3.set(0, 0, 0, ship.linearVelocity);
     const sail = ship.ld52ship.mast()!.mast.sail()!.sail;

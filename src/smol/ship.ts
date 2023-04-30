@@ -93,7 +93,7 @@ export async function createShip(em: EntityManager) {
     solid: false,
     aabb: timberAABB,
   });
-  em.ensureComponentOn(ent, PositionDef, V(0, 2, 0));
+  em.ensureComponentOn(ent, PositionDef, V(0, 0, 0));
   em.ensureComponentOn(ent, RotationDef);
   em.ensureComponentOn(ent, LinearVelocityDef);
   // em.ensureComponentOn(ent, ColorDef, V(0.5, 0.3, 0.1));
