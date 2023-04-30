@@ -54,6 +54,8 @@ const corner3 = vec2.create();
 const corner4 = vec2.create();
 const pointTemp = vec2.create();
 const nudgeTemp = vec3.create();
+const scaledTemp1 = vec2.create();
+const scaledTemp2 = vec2.create();
 
 EM.registerSystem(
   [ShipDef, PositionDef, WorldFrameDef, PhysicsStateDef],
@@ -94,14 +96,15 @@ EM.registerSystem(
 
     let hitLand = false;
     // go through each corner and sample along the edge between it and its neighbor
+
     for (let i = 0; i < corners.length; i++) {
       const corner = corners[i];
       const neighbor = corners[(i + 1) % 4];
       for (let s = 0; s <= SAMPLES_PER_EDGE; s++) {
         const r = s / SAMPLES_PER_EDGE;
         const point = vec2.add(
-          vec2.scale(corner, r),
-          vec2.scale(neighbor, 1 - r),
+          vec2.scale(corner, r, scaledTemp1),
+          vec2.scale(neighbor, 1 - r, scaledTemp2),
           pointTemp
         );
         if (isLand(point[0], point[1])) {
