@@ -228,9 +228,9 @@ export function parseAndMutateIntoMapData(
     }
   }
 
-  for (let blob of blobs) {
-    console.log(`Blob with color ${blob.color}`);
-  }
+  // for (let blob of blobs) {
+  //   console.log(`Blob with color ${blob.color}`);
+  // }
 
   // extract start pos
   const startBlob = blobs.filter(
@@ -284,6 +284,7 @@ export function parseAndMutateIntoMapData(
 }
 
 export async function setMap(em: EntityManager, name: MapName) {
+  console.log(`setting map to ${name}`);
   const res = await em.whenResources(MapBytesSetDef, RendererDef, ScoreDef);
 
   let __start = performance.now();

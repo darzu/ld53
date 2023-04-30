@@ -663,7 +663,7 @@ export async function initSmol(em: EntityManager, hosting: boolean) {
     WORLD_WIDTH === grassCutTex.size[0] && WORLD_HEIGHT === grassCutTex.size[1]
   );
 
-  score.onLevelEnd.push(() => {
+  score.onLevelEnd.push(async () => {
     worldCutData.fill(0.0);
     grassCutTex.queueUpdate(worldCutData);
     // vec3.set(0, 0, 0, ship.position);

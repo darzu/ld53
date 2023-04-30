@@ -93,7 +93,7 @@ export const meshPoolPtr = CY.createMeshPool("meshPool", {
   vertsStruct: VertexStruct,
   unisStruct: MeshUniformStruct,
   maxMeshes: MAX_MESHES,
-  maxSets: 2,
+  maxSets: 5,
   // maxSets: 3,
   setMaxTris: MAX_VERTICES * 2,
   setMaxLines: MAX_VERTICES,

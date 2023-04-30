@@ -22,8 +22,8 @@ export const ScoreDef = EM.defineComponent("score", () => ({
   victory: false,
   endZone: createRef<[typeof PhysicsStateDef]>(0, [PhysicsStateDef]),
   // TODO: this is very hacky
-  onLevelEnd: [] as (() => void)[],
-  onGameEnd: [] as (() => void)[],
+  onLevelEnd: [] as (() => Promise<void>)[],
+  onGameEnd: [] as (() => Promise<void>)[],
 }));
 
 EM.registerSystem(
@@ -45,7 +45,7 @@ EM.registerSystem(
 EM.registerSystem(
   [ShipHealthDef],
   [ScoreDef, TextDef, TimeDef, PartyDef],
-  (es, res) => {
+  async (es, res) => {
     const ship = es[0];
     if (!ship) return;
     if (!res.score.endZone()) return;
@@ -56,13 +56,13 @@ EM.registerSystem(
           res.score.levelNumber = 0;
           res.score.victory = false;
         }
-        setMap(EM, MapPaths[res.score.levelNumber]);
+        await setMap(EM, MapPaths[res.score.levelNumber]);
         //res.score.shipHealth = 10000;
         for (let f of res.score.onLevelEnd) {
-          f();
+          await f();
         }
         for (let f of res.score.onGameEnd) {
-          f();
+          await f();
         }
       }
     } else if (res.score.levelEnding) {
@@ -73,7 +73,7 @@ EM.registerSystem(
         setMap(EM, MapPaths[res.score.levelNumber]);
         //res.score.shipHealth = 10000;
         for (let f of res.score.onLevelEnd) {
-          f();
+          await f();
         }
       }
     } else if (ship.shipHealth.health <= 0) {

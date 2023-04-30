@@ -84,7 +84,7 @@ import { GrassCutTexPtr, grassPoolPtr } from "../smol/std-grass.js";
 import { setWindAngle, WindDef } from "../smol/wind.js";
 import { createShip, ShipDef } from "../smol/ship.js";
 import { SAIL_FURL_RATE } from "../smol/sail.js";
-import { spawnStoneTower } from "./stone.js";
+import { spawnStoneTower, StoneTowerDef } from "./stone.js";
 import { LandDef } from "./land-ship.js";
 import { DeadDef } from "../delete.js";
 import { BulletDef, breakBullet } from "../games/bullet.js";
@@ -218,7 +218,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   em.requireSystem("updateScoreDisplay");
   em.requireSystem("detectGameEnd");
   // start map
-  await setMap(em, "obstacles1");
+  await setMap(em, "tutorial1");
 
   // once the map is loaded, we can run JFA
   res.renderer.renderer.submitPipelines([], [...mapJfa.allPipes()]);
@@ -374,9 +374,8 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   // em.requireSystem("shipBouyancy");
 
   // end zone
-  const endZonePos = level2DtoWorld3D(level.levelMap.endZonePos, 5, vec3.tmp());
-  // DOCK
   const dock = createDock();
+  const endZonePos = level2DtoWorld3D(level.levelMap.endZonePos, 5, vec3.tmp());
   vec3.copy(dock.position, endZonePos);
 
   // drawBall(endZonePos, 4, ENDESGA16.deepGreen);
@@ -452,11 +451,12 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     EM.requireGameplaySystem("smolGhost");
   }
 
-  score.onLevelEnd.push(() => {
+  score.onLevelEnd.push(async () => {
     // worldCutData.fill(0.0);
     // grassCutTex.queueUpdate(worldCutData);
     // vec3.set(0, 0, 0, ship.position);
     // vec3.copy(ship.position, SHIP_START_POS);
+    const level = await em.whenResources(LevelMapDef);
     level2DtoWorld3D(level.levelMap.startPos, 2, ship.position);
     quat.identity(ship.rotation);
     vec3.set(0, 0, 0, ship.linearVelocity);
@@ -480,6 +480,32 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
         ship.woodState.mesh.quad.length
       )
     );
+    console.log("resetting dock position");
+    const endZonePos = level2DtoWorld3D(
+      level.levelMap.endZonePos,
+      5,
+      vec3.tmp()
+    );
+    vec3.copy(dock.position, endZonePos);
+
+    const towers = EM.filterEntities([StoneTowerDef]);
+    for (let tower of towers) {
+      EM.ensureComponentOn(tower, DeadDef);
+    }
+
+    // spawn towers
+    const tower3dPosesAndDirs: [vec3, number][] = level.levelMap.towers.map(
+      ([tPos, tDir]) => [
+        level2DtoWorld3D(tPos, -5, vec3.create()),
+        Math.atan2(-tDir[0], -tDir[1]),
+      ]
+    );
+
+    for (let [pos, angle] of tower3dPosesAndDirs) {
+      const stoneTower = await spawnStoneTower();
+      vec3.copy(stoneTower.position, pos);
+      quat.setAxisAngle([0, 1, 0], angle, stoneTower.rotation);
+    }
   });
 
   EM.registerSystem(

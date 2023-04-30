@@ -204,7 +204,7 @@ function knockOutBricks(tower: Tower, aabb: AABB, shrink = false): number {
   return bricksKnockedOut;
 }
 
-const maxStoneTowers = 20;
+const maxStoneTowers = 10;
 
 const height: number = 100;
 const baseRadius: number = 20;
