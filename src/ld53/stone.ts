@@ -349,6 +349,9 @@ let __prevTime = 0;
 
 const EPSILON = 10.0;
 const MAX_THETA = (31 * Math.PI) / 64;
+const MIN_THETA = -(31 * Math.PI) / 64;
+const THETA_JITTER = Math.PI / 128;
+const PHI_JITTER = Math.PI / 128;
 
 EM.registerSystem(
   [StoneTowerDef, WorldFrameDef],
@@ -360,7 +363,6 @@ EM.registerSystem(
     for (let tower of es) {
       const invertedTransform = mat4.invert(tower.world.transform);
       const towerSpaceTarget = vec3.transformMat4(target, invertedTransform);
-      /*
       const prevTowerSpaceTarget = vec3.transformMat4(
         __previousPartyPos,
         invertedTransform
@@ -371,6 +373,7 @@ EM.registerSystem(
         1 / (res.time.time - __prevTime)
       );
 
+      /*
       const zvelocity = targetVelocity[2];
 
       const timeToZZero = -(towerSpaceTarget[2] / zvelocity);
@@ -391,17 +394,26 @@ EM.registerSystem(
         tower.stoneTower.cannon()!.position[1];
       console.log(`timeToZZero=${timeToZZero}`);
       */
+
+      const v = tower.stoneTower.projectileSpeed;
+      const g = 10.0 * 0.00001;
+
       let x = towerSpaceTarget[0] - tower.stoneTower.cannon()!.position[0];
       const y = towerSpaceTarget[1] - tower.stoneTower.cannon()!.position[1];
-      const z = towerSpaceTarget[2];
+      let z = towerSpaceTarget[2];
+
+      // try to lead the target a bit using an approximation of flight
+      // time. this will not be exact.
+      const flightTime = x / (v * Math.cos(Math.PI / 4));
+      z = z + targetVelocity[2] * flightTime;
+      x = x + targetVelocity[2] * flightTime;
 
       if (x < 0) {
         // target is behind us, don't worry about it
         continue;
       }
 
-      // cannon yaw to hit target
-      const phi = -Math.atan(z / x);
+      let phi = -Math.atan(z / x);
 
       if (Math.abs(phi) > tower.stoneTower.firingRadius) {
         continue;
@@ -410,8 +422,6 @@ EM.registerSystem(
       x = Math.sqrt(x * x + z * z);
 
       // now, find the angle from our cannon.
-      const v = tower.stoneTower.projectileSpeed;
-      const g = 10.0 * 0.00001;
       // https://en.wikipedia.org/wiki/Projectile_motion#Angle_%CE%B8_required_to_hit_coordinate_(x,_y)
       const theta1 = Math.atan(
         (v * v + Math.sqrt(v * v * v * v - g * (g * x * x + 2 * y * v * v))) /
@@ -425,9 +435,9 @@ EM.registerSystem(
       // prefer smaller theta
       let theta = theta1;
       if (theta2 < theta1) theta = theta2;
-      if (isNaN(theta) || theta > MAX_THETA) {
-        // no firing solution--target is too far
-        console.log("target will be in sights but too far away");
+      if (isNaN(theta) || theta > MAX_THETA || theta < MIN_THETA) {
+        // no firing solution--target is too far or too close
+        console.log("target is in sights but too far away");
         continue;
       }
       console.log(
@@ -439,13 +449,11 @@ EM.registerSystem(
 
       const rot = tower.stoneTower.cannon()!.rotation;
       quat.identity(rot);
-      quat.rotateY(rot, phi, rot);
       quat.rotateZ(rot, theta, rot);
+      quat.rotateY(rot, phi, rot);
 
-      // OK, now we just need to know whether our time-of-flight matches up with the target's velocity
-      /*
-      const flightTime = x / (v * Math.cos(theta));
       // fire if we are within a couple of frames
+      /*
       console.log(`flightTime=${flightTime} timeToZZero=${timeToZZero}`);
       if (Math.abs(flightTime - timeToZZero) > 32) {
         continue;
@@ -457,6 +465,9 @@ EM.registerSystem(
       ) {
         continue;
       }
+      // when we fire, add some jitter to both theta and phi
+      quat.rotateZ(rot, jitter(THETA_JITTER), rot);
+      quat.rotateZ(rot, jitter(PHI_JITTER), rot);
       const worldRot = quat.create();
       mat4.getRotation(
         mat4.mul(tower.world.transform, mat4.fromQuat(rot)),
@@ -467,7 +478,7 @@ EM.registerSystem(
         2,
         tower.stoneTower.cannon()!.world.position,
         worldRot,
-        v, // + jitter(v / 5),
+        v,
         0.02,
         g,
         2.0,
