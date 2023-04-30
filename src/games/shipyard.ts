@@ -441,7 +441,6 @@ export function createHomeShip(): HomeShip {
     // railPath[railIdx].pos[0] = ribStarts[i][0];
     // railPath[railIdx].pos[2] = ribStarts[i][2];
   }
-  dbgPathWithGizmos(railPath);
   // rail board:
   appendBoard(builder.mesh, {
     path: railPath,
@@ -454,20 +453,48 @@ export function createHomeShip(): HomeShip {
     depth: ribDepth,
   });
 
+  translatePath(railPath, [0, 0, 8]);
+  dbgPathWithGizmos(railPath);
+
+  // PLANK PARAMS
+  // const plankCount = 20;
+  const plankWidth = 0.4;
+  const plankDepth = 0.2;
+
+  // RIBS W/ SLOTS
+  const evenRibs: Path[] = [];
+  let plankCount = 0;
+  let longestRibIdx = 0;
+  {
+    let ribIdx = 0;
+    for (let curve of ribCurves) {
+      let topToBottomCurve = reverseBezier(curve);
+      const even = createEvenPathFromBezier(
+        topToBottomCurve,
+        plankWidth * 2.0, // * 0.95,
+        [1, 0, 0]
+      );
+      // even.reverse();
+      // translatePath(even, [0, 0, 10]);
+      fixPathBasis(even, [0, 0, 1], [0, 1, 0], [-1, 0, 0]);
+      translatePathAlongNormal(even, ribDepth); // + 0.3);
+      // fixPathBasis(even, [0, 1, 0], [1, 0, 0], [0, 0, -1]);
+      dbgPathWithGizmos(even);
+      // dbgPathWithGizmos([even[0]]);
+      evenRibs.push(even);
+      if (even.length > plankCount) {
+        plankCount = even.length;
+        longestRibIdx = ribIdx;
+      }
+      ribIdx++;
+    }
+  }
+  console.log(`plankCount: ${plankCount}`);
+
   // PLANKS (take 2)
-  const centerRibIdx = Math.floor((ribPaths.length - 1) / 2);
-  const centerRibP = ribPaths[centerRibIdx];
-  const centerRibC = ribCurves[centerRibIdx];
-  dbgPathWithGizmos(centerRibP);
-
-  const evenCenterRibP = createEvenPathFromBezier(centerRibC, 0.8, [1, 0, 0]);
-  translatePath(evenCenterRibP, [10, 0, 10]);
-  // fixPathBasis(evenCenterRibP, [0, 1, 0], [0, 0, 1], [1, 0, 0]);
-  dbgPathWithGizmos(evenCenterRibP);
-  console.log("evenCenterRibP");
-  console.dir(evenCenterRibP);
-
-  // TODO(@darzu): generate planks along this?
+  // const centerRibP = ribPaths[longestRibIdx];
+  // const centerRibC = ribCurves[longestRibIdx];
+  // dbgPathWithGizmos(centerRibP);
 
   const sternKeelPath = keelPath.reduce(
     (p, n, i) => (i < 4 ? [...p, n] : p),
@@ -477,55 +504,79 @@ export function createHomeShip(): HomeShip {
     (p, n, i) => (i >= keelPath.length - 4 ? [...p, n] : p),
     [] as Path
   );
-  const plankCount = 20;
-  const plankWidth = 0.4;
-  const plankDepth = 0.2;
-  const __t1 = vec3.create();
-  const __t2 = vec3.create();
+
+  const _temp4 = vec3.create();
   for (let i = 0; i < plankCount; i++) {
-    const plankPath = clonePath(railPath);
-    const plankYOff = -plankWidth * 2.1 * i;
-    translatePath(plankPath, [0, plankYOff, 0]);
-    for (let i = 0; i < railNodes; i++) {
-      const node = plankPath[i];
-      // if (i === railNodes - 1) {
-      //   node.pos[2] = 0;
-      // } else
-      if (i === 0) {
-        // TODO(@darzu): FIX TRANSOM AREA!!
-        const ribPath = ribPaths[0];
-        const snapped = snapToPath(ribPath, node.pos[1], 1, __t1);
-        node.pos[2] = snapped[2];
-      } else {
-        // sternKeelPath
-        const ribIdx = Math.min(i - 1, ribPaths.length - 1);
-        const ribPath = ribPaths[ribIdx];
-        // const y = node.pos[1];
-        const onRib = snapToPath(ribPath, node.pos[1], 1, __t1);
-        const onBow = snapToPath(bowKeelPath, node.pos[1], 1, __t2);
-        node.pos[0] = onRib[0];
-        node.pos[2] = onRib[2];
-        if (i === railNodes - 1 || onRib[1] - 0.1 > node.pos[1]) {
-          // node.pos[0] = Math.max(onRib[0], onBow[0]);
-          if (i > railNodes / 2) {
-            node.pos[0] = onBow[0];
-            node.pos[2] = 0;
-            // trim the rest of the plank
-            for (let j = 0; j < railNodes - 1 - i; j++) {
-              plankPath.pop();
-            }
-            break;
-          }
-        }
-        // node.pos[1] = y;
-        // plankPath[i].pos[2] = 0; // TODO(@darzu):
-      }
-    }
+    const nodes: Path = evenRibs
+      .filter((rib) => rib.length > i)
+      .map((rib) => rib[i]);
+
+    // one extra board to connect to the keel
+    const secondToLast = nodes[nodes.length - 1];
+    const last: PathNode = {
+      pos: vec3.clone(secondToLast.pos),
+      rot: quat.clone(secondToLast.rot),
+    };
+    const snapped = snapToPath(bowKeelPath, last.pos[1], 1, _temp4);
+    last.pos[0] = snapped[0];
+    last.pos[2] = snapped[2];
+    nodes.push(last);
+
     appendBoard(builder.mesh, {
-      path: plankPath,
+      path: nodes,
       width: plankWidth,
       depth: plankDepth,
     });
+  }
+
+  if (false) {
+    const __t1 = vec3.create();
+    const __t2 = vec3.create();
+    for (let i = 0; i < plankCount; i++) {
+      const plankPath = clonePath(railPath);
+      const plankYOff = -plankWidth * 2.1 * i;
+      translatePath(plankPath, [0, plankYOff, 0]);
+      for (let i = 0; i < railNodes; i++) {
+        const node = plankPath[i];
+        // if (i === railNodes - 1) {
+        //   node.pos[2] = 0;
+        // } else
+        if (i === 0) {
+          // TODO(@darzu): FIX TRANSOM AREA!!
+          const ribPath = ribPaths[0];
+          const snapped = snapToPath(ribPath, node.pos[1], 1, __t1);
+          node.pos[2] = snapped[2];
+        } else {
+          // sternKeelPath
+          const ribIdx = Math.min(i - 1, ribPaths.length - 1);
+          const ribPath = ribPaths[ribIdx];
+          // const y = node.pos[1];
+          const onRib = snapToPath(ribPath, node.pos[1], 1, __t1);
+          const onBow = snapToPath(bowKeelPath, node.pos[1], 1, __t2);
+          node.pos[0] = onRib[0];
+          node.pos[2] = onRib[2];
+          if (i === railNodes - 1 || onRib[1] - 0.1 > node.pos[1]) {
+            // node.pos[0] = Math.max(onRib[0], onBow[0]);
+            if (i > railNodes / 2) {
+              node.pos[0] = onBow[0];
+              node.pos[2] = 0;
+              // trim the rest of the plank
+              for (let j = 0; j < railNodes - 1 - i; j++) {
+                plankPath.pop();
+              }
+              break;
+            }
+          }
+          // node.pos[1] = y;
+          // plankPath[i].pos[2] = 0; // TODO(@darzu):
+        }
+      }
+      appendBoard(builder.mesh, {
+        path: plankPath,
+        width: plankWidth,
+        depth: plankDepth,
+      });
+    }
   }
 
   // FLOOR
@@ -848,6 +899,15 @@ function translatePath(p: Path, tran: vec3.InputT) {
   p.forEach((n) => vec3.add(n.pos, tran, n.pos));
   return p;
 }
+const __temp3 = vec3.create();
+function translatePathAlongNormal(p: Path, t: number) {
+  p.forEach((n) => {
+    const norm = vec3.transformQuat([0, 0, 1], n.rot, __temp3);
+    vec3.scale(norm, t, norm);
+    vec3.add(n.pos, norm, n.pos);
+  });
+  return p;
+}
 function mirrorPath(p: Path, planeNorm: vec3) {
   // TODO(@darzu): support non-origin planes
   if (DBG_ASSERT)
@@ -890,6 +950,14 @@ interface BezierCubic {
   p1: vec3;
   p2: vec3;
   p3: vec3;
+}
+function reverseBezier(b: BezierCubic): BezierCubic {
+  return {
+    p0: vec3.clone(b.p3),
+    p1: vec3.clone(b.p2),
+    p2: vec3.clone(b.p1),
+    p3: vec3.clone(b.p0),
+  };
 }
 function bezierPosition(b: BezierCubic, t: number, out: vec3): vec3 {
   // https://en.wikipedia.org/wiki/Bézier_curve
@@ -963,9 +1031,10 @@ function createEvenPathFromBezier(
     lastDist = dist;
     distances.push(dist);
   }
-  console.log("distances");
-  console.dir(distances);
+  // console.log("distances");
+  // console.dir(distances);
   let totalDistance = distances[distances.length - 1];
+  // TODO(@darzu): instead of floor, maybe ceil
   let numSeg = Math.floor(totalDistance / spacing);
   let prevJ = 0;
   for (let i = 0; i < numSeg; i++) {
@@ -979,8 +1048,8 @@ function createEvenPathFromBezier(
         const extra = nextDist - toTravel;
         const prevT = Math.max((j - 1) / (_numSamples - 1), 0);
         const currT = j / (_numSamples - 1);
-        const bonusT = 1 - extra / span;
-        const t = prevT + bonusT * (currT - prevT);
+        const bonusRatio = 1 - extra / span;
+        const t = prevT + bonusRatio * (currT - prevT);
         prevJ = j;
 
         // add our node
@@ -989,7 +1058,8 @@ function createEvenPathFromBezier(
         vec3.normalize(tan, tan);
         const rot = quatFromUpForward(quat.create(), up, tan);
         path.push({ pos, rot });
-        console.log(`adding: ${t} -> ${vec3Dbg(pos)}`);
+        // console.log(`adding: ${t} -> ${vec3Dbg(pos)}`);
+        break;
       }
       prevDist = nextDist;
     }

@@ -789,18 +789,18 @@ export async function initRogueGame(em: EntityManager, hosting: boolean) {
     );
     EM.requireGameplaySystem("deadBullets");
 
-    // starter ammo
-    {
-      assert(colFloor.collider.shape === "AABB");
-      for (let i = 0; i < 3; i++) {
-        const pos: vec3 = vec3.clone([
-          colFloor.collider.aabb.max[0] - 2,
-          colFloor.collider.aabb.max[1] + 2,
-          colFloor.collider.aabb.max[2] - 2 * i - 3,
-        ]);
-        spawnGoodBall(pos);
-      }
-    }
+    // // starter ammo
+    // {
+    //   assert(colFloor.collider.shape === "AABB");
+    //   for (let i = 0; i < 3; i++) {
+    //     const pos: vec3 = vec3.clone([
+    //       colFloor.collider.aabb.max[0] - 2,
+    //       colFloor.collider.aabb.max[1] + 2,
+    //       colFloor.collider.aabb.max[2] - 2 * i - 3,
+    //     ]);
+    //     spawnGoodBall(pos);
+    //   }
+    // }
 
     em.registerSystem(
       [GoodBallDef, PositionDef, GravityDef, LinearVelocityDef],
