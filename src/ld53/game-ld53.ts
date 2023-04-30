@@ -75,7 +75,7 @@ import { GrassCutTexPtr, grassPoolPtr } from "../smol/std-grass.js";
 import { WindDef } from "../smol/wind.js";
 import { createShip, ShipDef } from "../smol/ship.js";
 import { SAIL_FURL_RATE } from "../smol/sail.js";
-import { createStoneTower } from "./stone.js";
+import { spawnStoneTower } from "./stone.js";
 
 /*
 NOTES:
@@ -519,9 +519,8 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   );
 
   for (let [pos, angle] of tower3dPosesAndDirs) {
-    const stoneTower = await createStoneTower(100, 20, 5, 2, 2.5, false);
-    EM.ensureComponentOn(stoneTower, PositionDef, pos);
-    EM.ensureComponentOn(stoneTower, RotationDef);
+    const stoneTower = await spawnStoneTower();
+    vec3.copy(stoneTower.position, pos);
     quat.setAxisAngle([0, 1, 0], angle, stoneTower.rotation);
   }
 
