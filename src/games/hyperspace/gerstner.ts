@@ -13,7 +13,7 @@ import { DISABLE_GERSTNER } from "../../flags.js";
 // TODO(@darzu): [ ] interactively shape bigger waves using fourier-ish approach
 
 // TODO(@darzu): EXPORT THIS VAR
-const roughness = 0.1;
+const roughness = 0.5;
 // const roughness = 0.5;
 const steepness = 1.0 * roughness;
 const bigWave = 1.0 * roughness;

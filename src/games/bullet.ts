@@ -310,7 +310,8 @@ export async function breakBullet(
     vec3.normalize(vel, vel);
     vec3.negate(vel, vel);
     vec3.add(vel, randNormalVec3(tempVec3()), vel);
-    vec3.add(vel, [0, -1, 0], vel);
+    // vec3.add(vel, [0, -1, 0], vel);
+    vec3.add(vel, [0, +1, 0], vel);
     vec3.normalize(vel, vel);
     vec3.scale(vel, 0.02, vel);
     em.ensureComponentOn(pe, LinearVelocityDef);

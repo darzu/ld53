@@ -35,7 +35,11 @@ import {
   shadowDepthTextures,
   shadowPipelines,
 } from "../render/pipelines/std-shadow.js";
-import { RenderableConstructDef, RendererDef } from "../render/renderer-ecs.js";
+import {
+  RenderableConstructDef,
+  RenderableDef,
+  RendererDef,
+} from "../render/renderer-ecs.js";
 import { mat3, mat4, quat, V, vec2, vec3, vec4 } from "../sprig-matrix.js";
 import {
   quatFromUpForward,
@@ -77,6 +81,9 @@ import { createShip, ShipDef } from "../smol/ship.js";
 import { SAIL_FURL_RATE } from "../smol/sail.js";
 import { spawnStoneTower } from "./stone.js";
 import { LandDef } from "./land-ship.js";
+import { DeadDef } from "../delete.js";
+import { BulletDef, breakBullet } from "../games/bullet.js";
+import { ParametricDef } from "../games/parametric-motion.js";
 /*
 NOTES:
 - Cut grass by updating a texture that has cut/not cut or maybe cut-height
@@ -317,7 +324,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
 
   // move down
   // ship.position[2] = -WORLD_SIZE * 0.5 * 0.6;
-  level2DtoWorld3D(level.levelMap.startPos, 15, ship.position);
+  level2DtoWorld3D(level.levelMap.startPos, 8, ship.position);
   //vec3.copy(ship.position, SHIP_START_POS);
   em.requireSystem("sailShip");
   em.requireSystem("shipParty");
@@ -537,6 +544,47 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   EM.requireSystem("stoneTowerAttack");
 
   EM.requireSystem("landShipCollision");
+
+  // BULLET STUFF
+  em.registerSystem(
+    [
+      BulletDef,
+      ColorDef,
+      WorldFrameDef,
+      // LinearVelocityDef
+      ParametricDef,
+    ],
+    [],
+    (es, res) => {
+      for (let b of es) {
+        if (b.bullet.health <= 0) {
+          breakBullet(b);
+        }
+      }
+    },
+    "breakBullets"
+  );
+  EM.requireGameplaySystem("breakBullets");
+  // dead bullet maintenance
+  // NOTE: this must be called after any system that can create dead bullets but
+  //   before the rendering systems.
+  em.registerSystem(
+    [BulletDef, PositionDef, DeadDef, RenderableDef],
+    [],
+    (es, _) => {
+      for (let e of es) {
+        if (e.dead.processed) continue;
+
+        e.bullet.health = 10;
+        vec3.set(0, -100, 0, e.position);
+        e.renderable.hidden = true;
+
+        e.dead.processed = true;
+      }
+    },
+    "deadBullets"
+  );
+  EM.requireGameplaySystem("deadBullets");
 }
 
 async function createPlayer() {

@@ -155,6 +155,9 @@ const MeshTransforms: Partial<{
     [1.2, 1.2, 1.2],
     mat4.create()
   ),
+  // TODO(@darzu): FOR LD53
+  ball: mat4.fromScaling([2, 2, 2]),
+  // ball_broken: mat4.fromScaling([2, 2, 2]),
 };
 
 // TODO(@darzu): PERF. "ocean" and "ship_fangs" are expensive to load and aren't needed in all games.
