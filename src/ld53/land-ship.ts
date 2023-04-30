@@ -16,6 +16,7 @@ import {
   pointInAABB,
   updateAABBWithPoint,
 } from "../physics/aabb.js";
+import { LinearVelocityDef } from "../physics/motion.js";
 import { PhysicsStateDef, WorldFrameDef } from "../physics/nonintersection.js";
 import {
   PhysicsParentDef,
@@ -36,7 +37,8 @@ import { assert } from "../util.js";
 import { vec3Dbg } from "../utils-3d.js";
 
 const SAMPLES_PER_EDGE = 5;
-const NUDGE_DIST = 0.5;
+const NUDGE_DIST = 1.0;
+const NUDGE_SPEED = 0.1;
 
 export const LandDef = EM.defineComponent("land", () => ({
   sample: (x: number, y: number) => 0 as number,
@@ -54,8 +56,12 @@ const nudgeTemp = vec3.create();
 const scaledTemp1 = vec2.create();
 const scaledTemp2 = vec2.create();
 
+// TODO: import these from somewhere
+const WORLD_WIDTH = 1024; // width runs +z
+const WORLD_HEIGHT = 512; // height runs +x
+
 EM.registerSystem(
-  [ShipDef, PositionDef, WorldFrameDef, PhysicsStateDef],
+  [ShipDef, PositionDef, WorldFrameDef, PhysicsStateDef, LinearVelocityDef],
   [PartyDef, LandDef, LevelMapDef],
   (es, res) => {
     if (!es.length) return;
@@ -69,6 +75,7 @@ EM.registerSystem(
     const shipLength = selfAABB.max[2] - selfAABB.min[2];
     const halfLength = shipLength / 2;
     const shipCenter = V(res.party.pos[0], res.party.pos[2]);
+    console.log(`ship at ${shipCenter[0]}, ${shipCenter[1]}`);
 
     // res.party.dir is Z
     vec2.set(
@@ -92,7 +99,13 @@ EM.registerSystem(
     //console.log(corners);
 
     function isLand(x: number, z: number) {
-      return res.land.sample(x, z) * 100.0 > 1.0;
+      return (
+        x < -WORLD_HEIGHT / 2 ||
+        x > WORLD_HEIGHT / 2 ||
+        z < -WORLD_WIDTH / 2 ||
+        z > WORLD_WIDTH / 2 ||
+        res.land.sample(x, z) * 100.0 > 1.0
+      );
     }
 
     let hitLand = false;
@@ -112,6 +125,9 @@ EM.registerSystem(
         // TODO: this should be in world space
         console.log(`nudging by ${vec3Dbg(nudge)}`);
         vec3.add(ship.position, nudge, ship.position);
+        vec3.normalize(nudge, nudge);
+        vec3.scale(nudge, NUDGE_SPEED, nudge);
+        vec3.add(ship.linearVelocity, nudge, ship.linearVelocity);
         hitLand = true;
         break;
       }
@@ -138,6 +154,8 @@ EM.registerSystem(
           console.log(`nudging by ${vec3Dbg(nudge)}`);
           // TODO: this should be in world space
           vec3.add(ship.position, nudge, ship.position);
+          vec3.scale(nudge, NUDGE_SPEED, nudge);
+          vec3.add(ship.linearVelocity, nudge, ship.linearVelocity);
           hitLand = true;
           break;
         }
