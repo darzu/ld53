@@ -114,15 +114,15 @@ PERF:
 */
 
 const DBG_PLAYER = false;
-const SHIP_START_POS = V(100, 0, -100);
+// const SHIP_START_POS = V(100, 0, -100);
 
 // world map is centered around 0,0
 const WORLD_WIDTH = 1024; // width runs +z
 const WORLD_HEIGHT = 512; // height runs +x
 
-const RED_DAMAGE_CUTTING = 10;
-const RED_DAMAGE_PER_FRAME = 40;
-const GREEN_HEALING = 1;
+// const RED_DAMAGE_CUTTING = 10;
+// const RED_DAMAGE_PER_FRAME = 40;
+// const GREEN_HEALING = 1;
 
 // const SHIP_START_POS: vec3 = V(0, 2, -WORLD_WIDTH * 0.5 * 0.8);
 

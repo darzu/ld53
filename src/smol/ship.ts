@@ -202,9 +202,11 @@ async function createRudder(em: EntityManager) {
     0,
     interactBox,
     Math.PI,
-    -Math.PI / 8,
+    // -Math.PI / 8,
+    -Math.PI / 12,
     1.5,
-    V(0, 20, 50),
+    // V(0, 20, 50),
+    V(0, 10, 30),
     true
   );
 
