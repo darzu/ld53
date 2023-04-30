@@ -35,7 +35,7 @@ import { TimeDef } from "../time.js";
 import { assert } from "../util.js";
 import { vec3Dbg } from "../utils-3d.js";
 
-const SAMPLES_PER_EDGE = 5;
+const SAMPLES_PER_EDGE = 3;
 const NUDGE_DIST = 1.0;
 
 export const LandDef = EM.defineComponent(
@@ -44,6 +44,18 @@ export const LandDef = EM.defineComponent(
     sample,
   })
 );
+
+const zBasis = vec2.create();
+const xBasis = vec2.create();
+const xBasis3 = vec3.create();
+const corner1 = vec2.create();
+const corner2 = vec2.create();
+const corner3 = vec2.create();
+const corner4 = vec2.create();
+const pointTemp = vec2.create();
+const nudgeTemp = vec3.create();
+const scaledTemp1 = vec2.create();
+const scaledTemp2 = vec2.create();
 
 EM.registerSystem(
   [ShipDef, PositionDef, WorldFrameDef, PhysicsStateDef],
@@ -62,19 +74,20 @@ EM.registerSystem(
     const shipCenter = V(res.party.pos[0], res.party.pos[2]);
 
     // res.party.dir is Z
-    const zBasis = V(
+    vec2.set(
       res.party.dir[0] * halfLength,
-      res.party.dir[2] * halfLength
+      res.party.dir[2] * halfLength,
+      zBasis
     );
-    const xBasis3 = vec3.cross([0, 1, 0], res.party.dir);
-    const xBasis = V(xBasis3[0] * halfWidth, xBasis3[1] * halfWidth);
+    vec3.cross([0, 1, 0], res.party.dir, xBasis3);
+    vec2.set(xBasis3[0] * halfWidth, xBasis3[1] * halfWidth, xBasis);
 
     // corners of the ship in world-space in clockwise order
     const corners: vec2[] = [
-      vec2.sub(vec2.sub(shipCenter, zBasis), xBasis),
-      vec2.sub(vec2.add(shipCenter, zBasis), xBasis),
-      vec2.add(vec2.sub(shipCenter, zBasis), xBasis),
-      vec2.add(vec2.add(shipCenter, zBasis), xBasis),
+      vec2.sub(vec2.sub(shipCenter, zBasis, corner1), xBasis, corner1),
+      vec2.sub(vec2.add(shipCenter, zBasis, corner2), xBasis, corner2),
+      vec2.add(vec2.sub(shipCenter, zBasis, corner3), xBasis, corner3),
+      vec2.add(vec2.add(shipCenter, zBasis, corner4), xBasis, corner4),
     ];
 
     function isLand(x: number, z: number) {
@@ -83,19 +96,25 @@ EM.registerSystem(
 
     let hitLand = false;
     // go through each corner and sample along the edge between it and its neighbor
+
     for (let i = 0; i < corners.length; i++) {
       const corner = corners[i];
       const neighbor = corners[(i + 1) % 4];
       for (let s = 0; s <= SAMPLES_PER_EDGE; s++) {
         const r = s / SAMPLES_PER_EDGE;
         const point = vec2.add(
-          vec2.scale(corner, r),
-          vec2.scale(neighbor, 1 - r)
+          vec2.scale(corner, r, scaledTemp1),
+          vec2.scale(neighbor, 1 - r, scaledTemp2),
+          pointTemp
         );
         if (isLand(point[0], point[1])) {
           console.log("touching land");
-          const dist = vec2.sub(neighbor, corner);
-          const nudge = vec3.cross([0, 1, 0], V(dist[0], 0, dist[1]));
+          const dist = vec2.sub(neighbor, corner, pointTemp);
+          const nudge = vec3.cross(
+            [0, 1, 0],
+            vec3.set(dist[0], 0, dist[1], nudgeTemp),
+            nudgeTemp
+          );
           vec3.normalize(nudge, nudge);
           vec3.scale(nudge, NUDGE_DIST, nudge);
           // TODO: this should be in world space
@@ -111,19 +130,6 @@ EM.registerSystem(
     }
 
     //    console.log(corners);
-
-    if (isLand(worldAABB.min[0], worldAABB.min[2])) {
-      console.log("corner 1");
-    }
-    if (isLand(worldAABB.max[0], worldAABB.min[2])) {
-      console.log("corner 2");
-    }
-    if (isLand(worldAABB.min[0], worldAABB.max[2])) {
-      console.log("corner 3");
-    }
-    if (isLand(worldAABB.max[0], worldAABB.max[2])) {
-      console.log("corner 4");
-    }
 
     // const winYi =
     //   ((worldAABB.min[0] + res.land.worldHeight * 0.5) / res.land.worldHeight) *
