@@ -32,6 +32,7 @@ import { ENDESGA16 } from "../color/palettes.js";
 import { createHomeShip } from "../games/shipyard.js";
 import { getAABBFromMesh, transformMesh } from "../render/mesh.js";
 import { createWoodHealth, WoodHealthDef, WoodStateDef } from "../wood.js";
+import { addGizmoChild } from "../utils-game.js";
 
 export const ShipDef = EM.defineComponent("ld52ship", () => ({
   mast: createRef(0, [MastDef, RotationDef]),
@@ -112,17 +113,20 @@ export async function createShip(em: EntityManager) {
   const rudder = await createRudder(em);
   em.ensureComponentOn(rudder, PhysicsParentDef, ent.id);
   // console.log("setting position");
-  vec3.set(0, 0, -12, rudder.position);
+  vec3.set(0, 4, -25, rudder.position);
+  // console.log(`rudder: ${rudder.id}`);
+
+  // addGizmoChild(rudder, 2, [0, 5, 0]);
 
   ent.ld52ship.rudder = createRef(rudder);
 
   // make debug gizmo
   // TODO(@darzu): would be nice to have as a little helper function?
-  const gizmo = EM.new();
-  EM.ensureComponentOn(gizmo, PositionDef, V(0, 20, 0));
-  EM.ensureComponentOn(gizmo, ScaleDef, V(10, 10, 10));
-  EM.ensureComponentOn(gizmo, PhysicsParentDef, ent.id);
-  EM.ensureComponentOn(gizmo, RenderableConstructDef, res.assets.gizmo.proto);
+  // const gizmo = EM.new();
+  // EM.ensureComponentOn(gizmo, PositionDef, V(0, 20, 0));
+  // EM.ensureComponentOn(gizmo, ScaleDef, V(10, 10, 10));
+  // EM.ensureComponentOn(gizmo, PhysicsParentDef, ent.id);
+  // EM.ensureComponentOn(gizmo, RenderableConstructDef, res.assets.gizmo.proto);
 
   return ent;
 }
@@ -179,7 +183,11 @@ async function createRudder(em: EntityManager) {
   const res = await em.whenResources(AssetsDef, MeDef);
   const ent = em.new();
   em.ensureComponentOn(ent, RudderDef);
-  em.ensureComponentOn(ent, RenderableConstructDef, res.assets.rudder.proto);
+  em.ensureComponentOn(
+    ent,
+    RenderableConstructDef,
+    res.assets.rudderPrim.proto
+  );
   // em.ensureComponentOn(ent, ColorDef, V(0.2, 0.1, 0.05));
   em.ensureComponentOn(ent, ColorDef, ENDESGA16.midBrown);
   em.ensureComponentOn(ent, PositionDef);

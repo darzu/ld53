@@ -730,3 +730,60 @@ export function makeDome(numLon: number, numLat: number, r: number): Mesh {
   };
   return mesh;
 }
+
+export function createRudderMesh(): Mesh {
+  const m = createEmptyMesh("rudder");
+
+  const handleHalfLength = 6;
+  const handleHalfThick = 0.3;
+  const rudderHeight = 16;
+  const rudderWidthBase = 5;
+  const rudderWidthTop = 2;
+  const rudderShiftZ = 2;
+
+  const H = handleHalfLength;
+  const T = handleHalfThick;
+  const R = rudderHeight;
+  const W = rudderWidthBase;
+  const W2 = rudderWidthTop;
+  const Z = rudderShiftZ;
+
+  // handle top
+  m.pos.push(V(-T, T, -H)); // 0
+  m.pos.push(V(-T, T, H));
+  m.pos.push(V(T, T, H));
+  m.pos.push(V(T, T, -H));
+  m.quad.push(V(0, 1, 2, 3));
+  // aft
+  m.pos.push(V(T, -R, -H + Z)); // 4
+  m.pos.push(V(-T, -R, -H + Z));
+  m.quad.push(V(0, 3, 4, 5));
+  // rudder bottom
+  m.pos.push(V(T, -R, -H + W + Z)); // 6
+  m.pos.push(V(-T, -R, -H + W + Z));
+  m.quad.push(V(5, 4, 6, 7));
+  // rudder fore
+  m.pos.push(V(T, -T, -H + W2)); // 8
+  m.pos.push(V(-T, -T, -H + W2));
+  m.quad.push(V(7, 6, 8, 9));
+  // handle under
+  m.pos.push(V(T, -T, H)); // 10
+  m.pos.push(V(-T, -T, H));
+  m.quad.push(V(9, 8, 10, 11));
+  // handle fore
+  m.quad.push(V(11, 10, 2, 1));
+  // rudder +x
+  m.quad.push(V(8, 6, 4, 3));
+  // rudder -x
+  m.quad.push(V(0, 5, 7, 9));
+  // handle +x
+  m.quad.push(V(3, 2, 10, 8));
+  // handle -x
+  m.quad.push(V(9, 11, 1, 0));
+
+  m.quad.forEach(() => m.colors.push(V(0, 0, 0)));
+
+  m.surfaceIds = m.quad.map((_, i) => i + 1);
+  (m as Mesh).usesProvoking = true;
+  return m as Mesh;
+}

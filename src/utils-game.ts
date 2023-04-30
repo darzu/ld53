@@ -182,11 +182,12 @@ export function randColor(v?: vec3): vec3 {
 
 export async function addGizmoChild(
   parent: Entity,
-  scale: number
+  scale: number = 1,
+  offset: vec3.InputT = [0, 0, 0]
 ): Promise<Entity> {
   // make debug gizmo
   const gizmo = EM.new();
-  EM.ensureComponentOn(gizmo, PositionDef, V(0, 0, 0));
+  EM.ensureComponentOn(gizmo, PositionDef, vec3.clone(offset));
   EM.ensureComponentOn(gizmo, ScaleDef, V(scale, scale, scale));
   EM.ensureComponentOn(gizmo, PhysicsParentDef, parent.id);
   const { assets } = await EM.whenResources(AssetsDef);

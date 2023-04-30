@@ -380,11 +380,17 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     // g.cameraFollow.yawOffset = 0.0;
     // g.cameraFollow.pitchOffset = -0.623;
 
-    vec3.copy(g.position, [77.68, 62.5, -370.74]);
-    quat.copy(g.rotation, [0.0, 0.01, 0.0, -1.0]);
+    // vec3.copy(g.position, [77.68, 62.5, -370.74]);
+    // quat.copy(g.rotation, [0.0, 0.01, 0.0, -1.0]);
+    // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
+    // g.cameraFollow.yawOffset = 0.0;
+    // g.cameraFollow.pitchOffset = -1.001;
+
+    vec3.copy(g.position, [63.61, 22.83, -503.91]);
+    quat.copy(g.rotation, [0.0, 0.89, 0.0, -0.45]);
     vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
     g.cameraFollow.yawOffset = 0.0;
-    g.cameraFollow.pitchOffset = -1.001;
+    g.cameraFollow.pitchOffset = -0.615;
 
     em.registerSystem(
       [GhostDef, WorldFrameDef, ColliderDef],
