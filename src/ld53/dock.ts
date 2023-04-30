@@ -38,6 +38,8 @@ export function createDock() {
   const timberHealth = createWoodHealth(wood);
   EM.ensureComponentOn(dock, WoodHealthDef, timberHealth);
   const timberAABB = getAABBFromMesh(mesh);
+  timberAABB.min[1] = -100;
+  timberAABB.max[1] = 100;
   EM.ensureComponentOn(dock, ColliderDef, {
     shape: "AABB",
     solid: false,

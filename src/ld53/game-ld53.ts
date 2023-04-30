@@ -102,7 +102,7 @@ PERF:
 [ ] reduce triangles on ocean
 */
 
-const DBG_PLAYER = true;
+const DBG_PLAYER = false;
 const SHIP_START_POS = V(100, 0, -100);
 
 // world map is centered around 0,0
