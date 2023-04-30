@@ -54,9 +54,9 @@ export const StoneTowerDef = EM.defineComponent(
     cannon: EntityW<
       [typeof PositionDef, typeof RotationDef, typeof WorldFrameDef]
     >,
-    fireRate = 1000,
+    fireRate = 2000,
     projectileSpeed = 0.15,
-    firingRadius = Math.PI / 16
+    firingRadius = Math.PI / 8
   ) =>
     ({
       rows: [],
@@ -360,6 +360,7 @@ EM.registerSystem(
     for (let tower of es) {
       const invertedTransform = mat4.invert(tower.world.transform);
       const towerSpaceTarget = vec3.transformMat4(target, invertedTransform);
+      /*
       const prevTowerSpaceTarget = vec3.transformMat4(
         __previousPartyPos,
         invertedTransform
@@ -389,11 +390,25 @@ EM.registerSystem(
         targetVelocity[1] * timeToZZero -
         tower.stoneTower.cannon()!.position[1];
       console.log(`timeToZZero=${timeToZZero}`);
+      */
+      let x = towerSpaceTarget[0] - tower.stoneTower.cannon()!.position[0];
+      const y = towerSpaceTarget[1] - tower.stoneTower.cannon()!.position[1];
+      const z = towerSpaceTarget[2];
 
       if (x < 0) {
         // target is behind us, don't worry about it
         continue;
       }
+
+      // cannon yaw to hit target
+      const phi = -Math.atan(z / x);
+
+      if (Math.abs(phi) > tower.stoneTower.firingRadius) {
+        continue;
+      }
+
+      x = Math.sqrt(x * x + z * z);
+
       // now, find the angle from our cannon.
       const v = tower.stoneTower.projectileSpeed;
       const g = 10.0 * 0.00001;
@@ -421,22 +436,26 @@ EM.registerSystem(
         )}`
       );
       // ok, we have a firing solution. rotate to the right angle
+
       const rot = tower.stoneTower.cannon()!.rotation;
       quat.identity(rot);
+      quat.rotateY(rot, phi, rot);
       quat.rotateZ(rot, theta, rot);
 
       // OK, now we just need to know whether our time-of-flight matches up with the target's velocity
+      /*
       const flightTime = x / (v * Math.cos(theta));
       // fire if we are within a couple of frames
       console.log(`flightTime=${flightTime} timeToZZero=${timeToZZero}`);
       if (Math.abs(flightTime - timeToZZero) > 32) {
         continue;
-      }
+      }*/
       // maybe we can't actually fire yet?
       if (
         tower.stoneTower.lastFired + tower.stoneTower.fireRate >
         res.time.time
       ) {
+        continue;
       }
       const worldRot = quat.create();
       mat4.getRotation(
@@ -448,7 +467,7 @@ EM.registerSystem(
         2,
         tower.stoneTower.cannon()!.world.position,
         worldRot,
-        v + jitter(v / 5),
+        v, // + jitter(v / 5),
         0.02,
         g,
         2.0,
