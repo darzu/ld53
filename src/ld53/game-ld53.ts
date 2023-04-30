@@ -47,7 +47,7 @@ import {
   randNormalVec3,
   vec3Dbg,
 } from "../utils-3d.js";
-import { randColor } from "../utils-game.js";
+import { drawBall, randColor } from "../utils-game.js";
 import { DevConsoleDef } from "../console.js";
 import { clamp, jitter, max, sum } from "../math.js";
 import { CY } from "../render/gpu-registry.js";
@@ -368,6 +368,8 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   const dock = createDock();
   vec3.copy(dock.position, endZonePos);
 
+  // drawBall(endZonePos, 4, ENDESGA16.deepGreen);
+
   em.whenEntityHas(dock, PhysicsStateDef).then(
     (dock) => (score.endZone = createRef(dock))
   );
@@ -406,17 +408,23 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     });
 
     // high up:
-    vec3.copy(g.position, [-140.25, 226.5, -366.78]);
-    quat.copy(g.rotation, [0.0, -0.99, 0.0, 0.15]);
-    vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
-    g.cameraFollow.yawOffset = 0.0;
-    g.cameraFollow.pitchOffset = -1.009;
+    // vec3.copy(g.position, [-140.25, 226.5, -366.78]);
+    // quat.copy(g.rotation, [0.0, -0.99, 0.0, 0.15]);
+    // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
+    // g.cameraFollow.yawOffset = 0.0;
+    // g.cameraFollow.pitchOffset = -1.009;
 
-    vec3.copy(g.position, [2.47, 46.5, -22.78]);
-    quat.copy(g.rotation, [0.0, -0.98, 0.0, -0.21]);
+    // vec3.copy(g.position, [2.47, 46.5, -22.78]);
+    // quat.copy(g.rotation, [0.0, -0.98, 0.0, -0.21]);
+    // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
+    // g.cameraFollow.yawOffset = 0.0;
+    // g.cameraFollow.pitchOffset = -0.623;
+
+    vec3.copy(g.position, [77.68, 62.5, -370.74]);
+    quat.copy(g.rotation, [0.0, 0.01, 0.0, -1.0]);
     vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
     g.cameraFollow.yawOffset = 0.0;
-    g.cameraFollow.pitchOffset = -0.623;
+    g.cameraFollow.pitchOffset = -1.001;
 
     em.registerSystem(
       [GhostDef, WorldFrameDef, ColliderDef],

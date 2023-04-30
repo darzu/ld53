@@ -7,11 +7,12 @@ import {
   lerpBetween,
   Path,
 } from "../games/shipyard.js";
+import { getHalfsizeFromAABB } from "../physics/aabb.js";
 import { ColliderDef } from "../physics/collider.js";
 import { PositionDef } from "../physics/transform.js";
 import { getAABBFromMesh, Mesh, validateMesh } from "../render/mesh.js";
 import { RenderableConstructDef } from "../render/renderer-ecs.js";
-import { quat, V } from "../sprig-matrix.js";
+import { quat, V, vec3 } from "../sprig-matrix.js";
 import {
   createEmptyMesh,
   createTimberBuilder,
@@ -80,6 +81,10 @@ export function createDockWood(): [Mesh, WoodState] {
       depth: plankDepth / 2,
     });
   }
+
+  // recenter
+  const size = getHalfsizeFromAABB(getAABBFromMesh(_timberMesh));
+  _timberMesh.pos.forEach((v) => vec3.sub(v, size, v));
 
   _timberMesh.surfaceIds = _timberMesh.colors.map((_, i) => i);
   const timberState = getBoardsFromMesh(_timberMesh);
