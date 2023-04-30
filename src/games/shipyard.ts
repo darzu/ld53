@@ -249,14 +249,36 @@ export function createHomeShip(): HomeShip {
 
     // fix keel orientation
     // r->g, g->b, b->r
-    const fixRot = quat.fromMat3(mat3.fromValues(0, 1, 0, 0, 0, 1, 1, 0, 0));
-    keelPath.forEach((p) => quat.mul(p.rot, fixRot, p.rot));
+    fixPathBasis(keelPath, [0, 1, 0], [0, 0, 1], [1, 0, 0]);
 
     const tempAABB = createAABB();
     keelPath.forEach((p) => updateAABBWithPoint(tempAABB, p.pos));
     translatePath(keelPath, [0, -tempAABB.min[1], 0]);
 
     dbgPathWithGizmos(keelPath);
+  }
+
+  function fixPathBasis(
+    path: Path,
+    newX: vec3.InputT,
+    newY: vec3.InputT,
+    newZ: vec3.InputT
+  ) {
+    // TODO(@darzu): PERF. Must be a better way to do this...
+    const fixRot = quat.fromMat3(
+      mat3.fromValues(
+        newX[0],
+        newX[1],
+        newX[2],
+        newY[0],
+        newY[1],
+        newY[2],
+        newZ[0],
+        newZ[1],
+        newZ[2]
+      )
+    );
+    path.forEach((p) => quat.mul(p.rot, fixRot, p.rot));
   }
 
   const keelAABB = createAABB();
@@ -280,12 +302,55 @@ export function createHomeShip(): HomeShip {
   const keelLength = keelSize[0];
   const ribSpace = keelLength / (ribCount + 1);
 
-  let outboardBezier: BezierCubic;
+  let railCurve: BezierCubic;
   {
-    const prow = V(0, keelAABB.max[1], 0); // prow of ship
-    //
-    // (outboardBezier = {});
+    const railHeight = keelAABB.max[1] - 1;
+    const prowOverhang = 0.5;
+    const prow = V(keelAABB.max[0] + prowOverhang, railHeight, 0);
+    const sternOverhang = 2;
+    const sternpost = V(keelAABB.min[0] - sternOverhang, railHeight, 0);
+    const transomWidth = 12;
+    const sternAngle = (1 * Math.PI) / 16;
+    const sternInfluence = 24;
+    const prowAngle = (4 * Math.PI) / 16;
+    const prowInfluence = 12;
+    const p0 = vec3.add(sternpost, [0, 0, transomWidth * 0.5], vec3.create());
+    const p1 = vec3.add(
+      p0,
+      [
+        Math.cos(sternAngle) * sternInfluence,
+        0,
+        Math.sin(sternAngle) * sternInfluence,
+      ],
+      vec3.create()
+    );
+    const p3 = prow;
+    const p2 = vec3.add(
+      p3,
+      [
+        -Math.cos(prowAngle) * prowInfluence,
+        0,
+        Math.sin(prowAngle) * prowInfluence,
+      ],
+      vec3.create()
+    );
+
+    railCurve = { p0, p1, p2, p3 };
   }
+  const railPath = createPathFromBezier(railCurve, 16, [0, 1, 0]);
+  fixPathBasis(railPath, [0, 1, 0], [0, 0, 1], [1, 0, 0]);
+  dbgPathWithGizmos(railPath);
+  // rail board:
+  appendBoard(builder.mesh, {
+    path: railPath,
+    width: ribWidth,
+    depth: ribDepth,
+  });
+  appendBoard(builder.mesh, {
+    path: mirrorPath(clonePath(railPath), V(0, 0, 1)),
+    width: ribWidth,
+    depth: ribDepth,
+  });
 
   for (let i = 0; i < ribCount; i++) {
     const ribX = i * ribSpace + ribSpace + keelAABB.min[0];
@@ -297,21 +362,22 @@ export function createHomeShip(): HomeShip {
     // TODO(@darzu): compute outboard with bezier curve
     const outboard = (1 - Math.abs(i - ribCount / 2) / (ribCount / 2)) * 10;
 
-    let ribBezier: BezierCubic;
+    let ribCurve: BezierCubic;
     {
       const p0 = vec3.clone(ribStart);
       const p1 = vec3.add(p0, [0, 0, 5], vec3.create());
       const p3 = vec3.add(ribStart, [0, keelSize[1], outboard], vec3.create());
       const p2 = vec3.add(p3, [0, -5, 0], vec3.create());
-      ribBezier = { p0, p1, p2, p3 };
+      ribCurve = { p0, p1, p2, p3 };
     }
 
-    const bPath = createPathFromBezier(ribBezier, numRibSegs, [1, 0, 0]);
+    const numRibSegs = 8;
+    const bPath = createPathFromBezier(ribCurve, numRibSegs, [1, 0, 0]);
 
     if (i === 0) {
       console.log("RIB BEZIER PATH");
       console.log(outboard);
-      console.dir(ribBezier);
+      console.dir(ribCurve);
       console.dir(bPath);
       dbgPathWithGizmos(bPath);
     }

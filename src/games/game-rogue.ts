@@ -870,11 +870,17 @@ export async function initRogueGame(em: EntityManager, hosting: boolean) {
       // g.cameraFollow.yawOffset = 0.0;
       // g.cameraFollow.pitchOffset = -0.593;
 
-      vec3.copy(g.position, [-3.61, 23.22, 36.56]);
-      quat.copy(g.rotation, [0.0, -0.11, 0.0, 0.99]);
+      // vec3.copy(g.position, [-3.61, 23.22, 36.56]);
+      // quat.copy(g.rotation, [0.0, -0.11, 0.0, 0.99]);
+      // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
+      // g.cameraFollow.yawOffset = 0.0;
+      // g.cameraFollow.pitchOffset = -0.378;
+
+      vec3.copy(g.position, [-4.19, 39.19, 4.41]);
+      quat.copy(g.rotation, [0.0, -0.01, 0.0, 1.0]);
       vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
       g.cameraFollow.yawOffset = 0.0;
-      g.cameraFollow.pitchOffset = -0.378;
+      g.cameraFollow.pitchOffset = -1.439;
     }
 
     if (!DBG_PLAYER) {
