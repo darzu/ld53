@@ -505,25 +505,91 @@ export function createHomeShip(): HomeShip {
     [] as Path
   );
 
+  let transomPlankNum = evenRibs[0].length;
+
+  const plankPaths: Path[] = [];
+  const plankPathsMirrored: Path[] = [];
   const _temp4 = vec3.create();
   for (let i = 0; i < plankCount; i++) {
     const nodes: Path = evenRibs
       .filter((rib) => rib.length > i)
       .map((rib) => rib[i]);
 
-    // one extra board to connect to the keel
-    const secondToLast = nodes[nodes.length - 1];
-    const last: PathNode = {
-      pos: vec3.clone(secondToLast.pos),
-      rot: quat.clone(secondToLast.rot),
-    };
-    const snapped = snapToPath(bowKeelPath, last.pos[1], 1, _temp4);
-    last.pos[0] = snapped[0];
-    last.pos[2] = snapped[2];
-    nodes.push(last);
+    // one extra board to connect to the keel up front
+    if (i < 20) {
+      const secondToLast = nodes[nodes.length - 1];
+      const last: PathNode = {
+        pos: vec3.clone(secondToLast.pos),
+        rot: quat.clone(secondToLast.rot),
+      };
+      const snapped = snapToPath(bowKeelPath, last.pos[1], 1, _temp4);
+      last.pos[0] = snapped[0] + 1;
+      last.pos[2] = snapped[2];
+      nodes.push(last);
+    }
+
+    // extend boards backward for the transom
+    if (i < transomPlankNum) {
+      const second = nodes[0];
+      const third = nodes[1];
+      const first: PathNode = {
+        pos: vec3.clone(second.pos),
+        rot: quat.clone(second.rot),
+      };
+      const diff = vec3.sub(second.pos, third.pos, first.pos);
+      const scale = (transomPlankNum - 1 - i) / (transomPlankNum - 1) + 0.4;
+      console.log("scale: " + scale);
+      vec3.scale(diff, scale, diff);
+      vec3.add(second.pos, diff, first.pos);
+      nodes.unshift(first);
+    }
+    plankPaths.push(nodes);
+
+    let mirroredPath = mirrorPath(clonePath(nodes), [0, 0, 1]);
+    plankPathsMirrored.push(mirroredPath);
 
     appendBoard(builder.mesh, {
       path: nodes,
+      width: plankWidth,
+      depth: plankDepth,
+    });
+    appendBoard(builder.mesh, {
+      path: mirroredPath,
+      width: plankWidth,
+      depth: plankDepth,
+    });
+  }
+
+  // TRANSOM
+  for (let i = 0; i < transomPlankNum; i++) {
+    const start = plankPaths[i][0];
+    const end = plankPathsMirrored[i][0];
+    const length = vec3.dist(start.pos, end.pos);
+    const numDesired = Math.ceil(length / ribSpace);
+    let path: Path = [];
+
+    path.push(start);
+    for (let j = 1; j < numDesired - 1; j++) {
+      const pos = vec3.lerp(
+        start.pos,
+        end.pos,
+        j / (numDesired - 1),
+        vec3.create()
+      );
+      path.push({
+        pos,
+        rot: quat.clone(start.rot),
+      });
+    }
+    path.push(end);
+
+    if (i == 2) dbgPathWithGizmos(path);
+    for (let n of path) {
+      quat.fromEuler(-Math.PI / 2, 0, Math.PI / 2, n.rot);
+      quat.rotateY(n.rot, -Math.PI / 16, n.rot);
+    }
+    appendBoard(builder.mesh, {
+      path: path,
       width: plankWidth,
       depth: plankDepth,
     });
@@ -908,7 +974,9 @@ function translatePathAlongNormal(p: Path, t: number) {
   });
   return p;
 }
-function mirrorPath(p: Path, planeNorm: vec3) {
+let __mirrorMat = mat3.create();
+let __tq1 = quat.create();
+function mirrorPath(p: Path, planeNorm: vec3.InputT) {
   // TODO(@darzu): support non-origin planes
   if (DBG_ASSERT)
     assert(
@@ -929,12 +997,13 @@ function mirrorPath(p: Path, planeNorm: vec3) {
     -2 * b * c,
     -2 * a * c,
     -2 * b * c,
-    1 - 2 * c ** 2
+    1 - 2 * c ** 2,
+    __mirrorMat
   );
 
-  // TODO(@darzu): can we use mat3 instead of mirror quat?
+  // TODO(@darzu): can we use the mat3 instead of mirror quat?
   // https://stackoverflow.com/a/49234603/814454
-  let mirrorQuat = quat.set(a, b, c, 0);
+  let mirrorQuat = quat.set(a, b, c, 0, __tq1);
 
   p.forEach((curr) => {
     quat.mul(mirrorQuat, curr.rot, curr.rot);
@@ -1035,11 +1104,14 @@ function createEvenPathFromBezier(
   // console.dir(distances);
   let totalDistance = distances[distances.length - 1];
   // TODO(@darzu): instead of floor, maybe ceil
-  let numSeg = Math.floor(totalDistance / spacing);
+  // let numSeg = Math.floor(totalDistance / spacing);
+  let numSeg = Math.ceil(totalDistance / spacing);
   let prevJ = 0;
   for (let i = 0; i < numSeg; i++) {
     const toTravel = i * spacing;
     let prevDist = 0;
+    let prevPrevDist = 0;
+    let didAdd = false;
     for (let j = prevJ; j < samples.length; j++) {
       const nextDist = distances[j];
       if (nextDist > toTravel) {
@@ -1058,10 +1130,25 @@ function createEvenPathFromBezier(
         vec3.normalize(tan, tan);
         const rot = quatFromUpForward(quat.create(), up, tan);
         path.push({ pos, rot });
+        didAdd = true;
         // console.log(`adding: ${t} -> ${vec3Dbg(pos)}`);
         break;
       }
+      prevPrevDist = prevDist;
       prevDist = nextDist;
+    }
+    if (!didAdd) {
+      const span = prevDist - prevPrevDist;
+      const extra = toTravel - prevDist;
+      const extraSteps = extra / span;
+      const lastSample = samples[samples.length - 1];
+      const lastSample2 = samples[samples.length - 2];
+      const dir = vec3.sub(lastSample, lastSample2, vec3.create());
+      vec3.normalize(dir, dir);
+      vec3.scale(dir, extraSteps, dir);
+      const pos = vec3.add(lastSample, dir, dir);
+      const rot = quat.clone(path[path.length - 1].rot);
+      path.push({ pos, rot });
     }
   }
   //  = samples.reduce((p, n, i) =>
