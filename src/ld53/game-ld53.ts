@@ -92,7 +92,7 @@ PERF:
 [ ] reduce triangles on ocean
 */
 
-const DBG_PLAYER = false;
+const DBG_PLAYER = true;
 const SHIP_START_POS = V(100, 0, -100);
 
 // world map is centered around 0,0
@@ -475,14 +475,13 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   text.lowerText =
     "W/S: unfurl/furl, A/D: turn, SPACE: harvest on/off, E: use/unuse rudder";
   if (DBG_PLAYER) text.lowerText = "";
-
   // Spawn towers
   // {
   //   const tower3DPoses = level.levelMap.towers.map((tPos) =>
   //     level2DtoWorld3D(
   //       tPos,
   //       20, // TODO(@darzu): lookup from heightmap?
-  //       vec3.create()
+  //       vec3.screate()
   //     )
   //   );
   //   await startTowers(tower3DPoses);
@@ -511,9 +510,20 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     }
   }
   createGraph3D(vec3.add(worldGizmo.position, [50, 10, 50], V(0, 0, 0)), data);
-  let stoneTower = await createStoneTower(100, 20, 5, 2, 2.5, false);
-  EM.ensureComponentOn(stoneTower, PositionDef, V(-100, -5, 0));
-  EM.ensureComponentOn(stoneTower, ColorDef, ENDESGA16.darkGray);
+
+  const tower3dPosesAndDirs: [vec3, number][] = level.levelMap.towers.map(
+    ([tPos, tDir]) => [
+      level2DtoWorld3D(tPos, -5, vec3.create()),
+      Math.atan2(-tDir[0], -tDir[1]),
+    ]
+  );
+
+  for (let [pos, angle] of tower3dPosesAndDirs) {
+    const stoneTower = await createStoneTower(100, 20, 5, 2, 2.5, false);
+    EM.ensureComponentOn(stoneTower, PositionDef, pos);
+    EM.ensureComponentOn(stoneTower, RotationDef);
+    quat.setAxisAngle([0, 1, 0], angle, stoneTower.rotation);
+  }
 
   EM.requireSystem("stoneTowerAttack");
 }

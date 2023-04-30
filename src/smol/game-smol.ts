@@ -889,7 +889,7 @@ export async function initSmol(em: EntityManager, hosting: boolean) {
   {
     const tower3DPoses = level.levelMap.towers.map((tPos) =>
       level2DtoWorld3D(
-        tPos,
+        tPos[0],
         20, // TODO(@darzu): lookup from heightmap?
         vec3.create()
       )

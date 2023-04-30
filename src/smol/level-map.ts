@@ -28,7 +28,7 @@ export const LandMapTexPtr = CY.createTexture("landMap", {
 export const LevelMapDef = EM.defineComponent("levelMap", () => ({
   name: "unknown",
   land: new Float32Array(),
-  towers: [] as vec2[],
+  towers: [] as [vec2, vec2][],
   startPos: V(0, 0),
 }));
 type LevelMap = Component<typeof LevelMapDef>;
@@ -43,6 +43,42 @@ interface MapBlob {
   aabb: AABB2; // NOTE: min is inclusive, max is exclusive
   area: number;
   runs: MapBlobRun[];
+}
+
+function centerOfMassAndDirection(b: MapBlob): [vec2, vec2] {
+  let cx = 0;
+  let cy = 0;
+  let len = 0;
+  for (let run of b.runs) {
+    const y = run.y;
+    for (let x = run.x0; x < run.x1; x++) {
+      cx += x;
+      cy += y;
+      len++;
+    }
+  }
+  cx /= len;
+  cx = Math.floor(cx);
+  cy /= len;
+  cy = Math.floor(cy);
+  // direction of furthest point
+  let fx = cx;
+  let fy = cy;
+  let fd = 0;
+  for (let run of b.runs) {
+    const y = run.y;
+    for (let x = run.x0; x < run.x1; x++) {
+      const d = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+      if (d > fd) {
+        fx = x;
+        fy = y;
+        fd = d;
+      }
+    }
+  }
+  const dir = V(fx - cx, fy - cy);
+  vec2.normalize(dir, dir);
+  return [V(cx, cy), dir];
 }
 
 // NOTE: we mutate the maps as we parse them (so we have easier bookkeeping)
@@ -175,17 +211,17 @@ export function parseAndMutateIntoMapData(
   let totalPurple = 0;
 
   // extract land data
-  for (let blob of blobs) {
-    if (blob.color[0] > 200) {
-      for (let r of blob.runs) {
-        for (let x = r.x0; x < r.x1; x++) {
-          // TODO(@darzu): parameterize this transform?
-          const outIdx = x + (mapBytes.height - 1 - r.y) * mapBytes.width;
-          landData[outIdx] = 1.0;
-        }
-      }
-    }
-  }
+  // for (let blob of blobs) {
+  //   if (blob.color[0] > 200) {
+  //     for (let r of blob.runs) {
+  //       for (let x = r.x0; x < r.x1; x++) {
+  //         // TODO(@darzu): parameterize this transform?
+  //         const outIdx = x + (mapBytes.height - 1 - r.y) * mapBytes.width;
+  //         landData[outIdx] = 1.0;
+  //       }
+  //     }
+  //   }
+  // }
 
   // extract start pos
   const startBlob = blobs.filter(
@@ -197,7 +233,7 @@ export function parseAndMutateIntoMapData(
   // extract tower locations
   const towers = blobs
     .filter((b) => b.color[0] > 200 && b.color[1] > 200 && b.color[2] < 100)
-    .map((b) => aabbCenter2(vec2.create(), b.aabb));
+    .map((b) => centerOfMassAndDirection(b));
 
   const levelMap: LevelMap = {
     land: landData,

@@ -351,7 +351,7 @@ const EPSILON = 10.0;
 const MAX_THETA = (31 * Math.PI) / 64;
 const MIN_THETA = -(31 * Math.PI) / 64;
 const THETA_JITTER = Math.PI / 128;
-const PHI_JITTER = Math.PI / 128;
+const PHI_JITTER = Math.PI / 64;
 
 EM.registerSystem(
   [StoneTowerDef, WorldFrameDef],
@@ -437,14 +437,14 @@ EM.registerSystem(
       if (theta2 < theta1) theta = theta2;
       if (isNaN(theta) || theta > MAX_THETA || theta < MIN_THETA) {
         // no firing solution--target is too far or too close
-        console.log("target is in sights but too far away");
+        //console.log("target is in sights but too far away");
         continue;
       }
-      console.log(
-        `Firing solution found, theta1 is ${theta1} theta2 is ${theta2} x=${x} y=${y} v=${v} sqrt is ${Math.sqrt(
-          v * v * v * v - g * (g * x * x + 2 * y * v * v)
-        )}`
-      );
+      // console.log(
+      //   `Firing solution found, theta1 is ${theta1} theta2 is ${theta2} x=${x} y=${y} v=${v} sqrt is ${Math.sqrt(
+      //     v * v * v * v - g * (g * x * x + 2 * y * v * v)
+      //   )}`
+      // );
       // ok, we have a firing solution. rotate to the right angle
 
       const rot = tower.stoneTower.cannon()!.rotation;
