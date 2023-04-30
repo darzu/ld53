@@ -39,6 +39,7 @@ import {
 } from "../physics/transform.js";
 import { RenderableConstructDef } from "../render/renderer-ecs.js";
 import {
+  AABB,
   createAABB,
   getSizeFromAABB,
   updateAABBWithPoint,
@@ -229,6 +230,18 @@ export function snapToPath(path: Path, w: number, dim: 0 | 1 | 2, out: vec3) {
   vec3.copy(out, path[path.length - 1].pos);
   return out;
 }
+
+export const homeShipAABBs: AABB[] = [
+  { min: V(-10.6, -2.65, -22.1), max: V(-6.6, 3.65, 18.1) },
+  { min: V(7.0, -2.65, -22.1), max: V(11.0, 3.65, 18.1) },
+  { min: V(-6.8, -2.65, -30.45), max: V(6.4, 3.65, -25.95) },
+  { min: V(5.45, -2.65, -26.15), max: V(7.95, 3.65, -21.65) },
+  { min: V(-8.05, -2.65, -26.15), max: V(-5.55, 3.65, -21.65) },
+  { min: V(-8.05, -2.65, 17.95), max: V(-4.35, 3.65, 22.45) },
+  { min: V(4.25, -2.65, 17.95), max: V(7.95, 3.65, 22.45) },
+  { min: V(-6.15, -2.65, 22.25), max: V(5.55, 3.65, 26.15) },
+  { min: V(-6.8, -5.95, -26.1), max: V(7.2, 0.35, 22.5) },
+];
 
 export function createHomeShip(): HomeShip {
   const _start = performance.now();
