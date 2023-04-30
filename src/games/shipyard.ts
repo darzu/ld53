@@ -869,6 +869,12 @@ export function createHomeShip(): HomeShip {
   //   }
   // }
 
+  // ROTATE WHOLE THING (YIKES)
+  {
+    const rotate = quat.fromEuler(0, -Math.PI / 2, 0);
+    _timberMesh.pos.forEach((v) => vec3.transformQuat(v, rotate, v));
+  }
+
   // console.dir(_timberMesh.colors);
   _timberMesh.surfaceIds = _timberMesh.colors.map((_, i) => i);
   const timberState = getBoardsFromMesh(_timberMesh);

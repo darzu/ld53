@@ -29,6 +29,8 @@ import { CameraFollowDef } from "../camera.js";
 import { createSock } from "./windsock.js";
 import { BARGE_AABBS, SHIP_SMALL_AABBS } from "../primatives.js";
 import { ENDESGA16 } from "../color/palettes.js";
+import { createHomeShip } from "../games/shipyard.js";
+import { transformMesh } from "../render/mesh.js";
 
 export const ShipDef = EM.defineComponent("ld52ship", () => ({
   mast: createRef(0, [MastDef, RotationDef]),
@@ -54,10 +56,14 @@ export async function createShip(em: EntityManager) {
   const res = await em.whenResources(AssetsDef);
   const ent = em.new();
   em.ensureComponentOn(ent, ShipDef);
+
+  const homeShip = createHomeShip();
+
   em.ensureComponentOn(
     ent,
     RenderableConstructDef,
-    res.assets.ship_small.proto
+    homeShip.timberMesh
+    // res.assets.ship_small.proto
   );
   // em.set(ent, ColliderDef, {
   //   shape: "AABB",
