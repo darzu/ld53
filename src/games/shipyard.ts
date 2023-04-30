@@ -10,7 +10,7 @@ import {
   transformMesh,
   validateMesh,
 } from "../render/mesh.js";
-import { assert, assertDbg } from "../util.js";
+import { assert, assertDbg, range } from "../util.js";
 import {
   centroid,
   quatFromUpForward,
@@ -200,20 +200,27 @@ async function dbgPathWithGizmos(path: Path) {
 }
 
 function snapXToPath(path: Path, x: number, out: vec3) {
+  return snapToPath(path, x, 0, out);
+}
+const __temp2 = vec3.create();
+function snapToPath(path: Path, w: number, dim: 0 | 1 | 2, out: vec3) {
   for (let i = 0; i < path.length; i++) {
     let pos = path[i].pos;
-    // are we ahead of x
-    if (x < pos[0]) {
+    // are we ahead of w
+    if (w < pos[dim]) {
       if (i === 0) {
-        // x is before the whole path
+        // w is before the whole path
         vec3.copy(out, path[i].pos);
         return out;
       }
       let prev = path[i - 1].pos;
-      assert(prev[0] <= x, `TODO: we assume path is in assending X order`);
+      assert(
+        prev[dim] <= w,
+        `TODO: we assume path is in assending [x,y,z][${dim}] order`
+      );
 
-      let diff = vec3.sub(pos, prev);
-      let percent = (x - prev[0]) / diff[0];
+      let diff = vec3.sub(pos, prev, __temp2);
+      let percent = (w - prev[dim]) / diff[dim];
       vec3.add(prev, vec3.scale(diff, percent, out), out);
       return out;
     }
@@ -346,28 +353,20 @@ export function createHomeShip(): HomeShip {
 
     railCurve = { p0, p1, p2, p3 };
   }
-  const railPath = createPathFromBezier(railCurve, 16, [0, 1, 0]);
+  const railNodes = ribCount + 2;
+  const railPath = createPathFromBezier(railCurve, railNodes, [0, 1, 0]);
   fixPathBasis(railPath, [0, 1, 0], [0, 0, 1], [1, 0, 0]);
-  dbgPathWithGizmos(railPath);
-  // rail board:
-  appendBoard(builder.mesh, {
-    path: railPath,
-    width: ribWidth,
-    depth: ribDepth,
-  });
-  appendBoard(builder.mesh, {
-    path: mirrorPath(clonePath(railPath), V(0, 0, 1)),
-    width: ribWidth,
-    depth: ribDepth,
-  });
 
+  // let ribEnds: vec3[] = [];
+  let ribPaths: Path[] = [];
+  let ribCurves: BezierCubic[] = [];
   for (let i = 0; i < ribCount; i++) {
     // const ribX = i * ribSpace + 2 + keelAABB.min[0];
     const ribX = i * ribSpace + ribSpace + keelAABB.min[0];
     const ribStart = snapXToPath(keelPath, ribX, vec3.create());
 
     // const p = translatePath(makeRibPath(i), V(i * ribSpace, 0, 0));
-    const weirdP = translatePath(makeRibPathWierd(i), ribStart);
+    // const weirdP = translatePath(makeRibPathWierd(i), ribStart);
     // if (i === 0) dbgPathWithGizmos(p);
 
     // TODO(@darzu): compute outboard with bezier curve
@@ -387,6 +386,8 @@ export function createHomeShip(): HomeShip {
         p1[2] -= 4;
       }
       const ribEnd = snapXToPath(railPath, ribStart[0], vec3.create());
+      // ribEnds.push(ribEnd);
+
       const p3 = ribEnd;
       // const p3 = vec3.add(ribStart, [0, keelSize[1], outboard], vec3.create());
       const p2 = vec3.add(p3, [0, -5, 2], vec3.create());
@@ -399,10 +400,12 @@ export function createHomeShip(): HomeShip {
         console.dir(ribCurve);
       }
     }
+    ribCurves.push(ribCurve);
 
     const numRibSegs = 8;
     const bPath = createPathFromBezier(ribCurve, numRibSegs, [1, 0, 0]);
     fixPathBasis(bPath, [0, 1, 0], [0, 0, 1], [1, 0, 0]);
+    ribPaths.push(bPath);
 
     if (i === 0) {
       console.log("RIB BEZIER PATH");
@@ -412,7 +415,7 @@ export function createHomeShip(): HomeShip {
       dbgPathWithGizmos(bPath);
       dbgPathWithGizmos(mirrorPath(clonePath(bPath), V(0, 0, 1)));
     }
-    if (i === 1) dbgPathWithGizmos(weirdP);
+    // if (i === 1) dbgPathWithGizmos(weirdP);
 
     appendBoard(builder.mesh, {
       path: bPath,
@@ -427,49 +430,153 @@ export function createHomeShip(): HomeShip {
     });
   }
 
+  // RAIL
+  // fix rail spacing to match ribs
+  for (let i = 0; i < ribCount; i++) {
+    const railIdx = i + 1;
+    const ribPath = ribPaths[i];
+    const ribEnd = ribPath[ribPath.length - 1];
+    // console.log(`${vec3Dbg(railPath[railIdx].pos)} vs ${ribEnd.pos}`);
+    vec3.copy(railPath[railIdx].pos, ribEnd.pos);
+    // railPath[railIdx].pos[0] = ribStarts[i][0];
+    // railPath[railIdx].pos[2] = ribStarts[i][2];
+  }
+  dbgPathWithGizmos(railPath);
+  // rail board:
+  appendBoard(builder.mesh, {
+    path: railPath,
+    width: ribWidth,
+    depth: ribDepth,
+  });
+  appendBoard(builder.mesh, {
+    path: mirrorPath(clonePath(railPath), V(0, 0, 1)),
+    width: ribWidth,
+    depth: ribDepth,
+  });
+
+  // PLANKS (take 2)
+  const centerRibIdx = Math.floor((ribPaths.length - 1) / 2);
+  const centerRibP = ribPaths[centerRibIdx];
+  const centerRibC = ribCurves[centerRibIdx];
+  dbgPathWithGizmos(centerRibP);
+
+  const evenCenterRibP = createEvenPathFromBezier(centerRibC, 0.8, [1, 0, 0]);
+  translatePath(evenCenterRibP, [10, 0, 10]);
+  // fixPathBasis(evenCenterRibP, [0, 1, 0], [0, 0, 1], [1, 0, 0]);
+  dbgPathWithGizmos(evenCenterRibP);
+  console.log("evenCenterRibP");
+  console.dir(evenCenterRibP);
+
+  // TODO(@darzu): generate planks along this?
+
+  const sternKeelPath = keelPath.reduce(
+    (p, n, i) => (i < 4 ? [...p, n] : p),
+    [] as Path
+  );
+  const bowKeelPath = keelPath.reduce(
+    (p, n, i) => (i >= keelPath.length - 4 ? [...p, n] : p),
+    [] as Path
+  );
+  const plankCount = 20;
+  const plankWidth = 0.4;
+  const plankDepth = 0.2;
+  const __t1 = vec3.create();
+  const __t2 = vec3.create();
+  for (let i = 0; i < plankCount; i++) {
+    const plankPath = clonePath(railPath);
+    const plankYOff = -plankWidth * 2.1 * i;
+    translatePath(plankPath, [0, plankYOff, 0]);
+    for (let i = 0; i < railNodes; i++) {
+      const node = plankPath[i];
+      // if (i === railNodes - 1) {
+      //   node.pos[2] = 0;
+      // } else
+      if (i === 0) {
+        // TODO(@darzu): FIX TRANSOM AREA!!
+        const ribPath = ribPaths[0];
+        const snapped = snapToPath(ribPath, node.pos[1], 1, __t1);
+        node.pos[2] = snapped[2];
+      } else {
+        // sternKeelPath
+        const ribIdx = Math.min(i - 1, ribPaths.length - 1);
+        const ribPath = ribPaths[ribIdx];
+        // const y = node.pos[1];
+        const onRib = snapToPath(ribPath, node.pos[1], 1, __t1);
+        const onBow = snapToPath(bowKeelPath, node.pos[1], 1, __t2);
+        node.pos[0] = onRib[0];
+        node.pos[2] = onRib[2];
+        if (i === railNodes - 1 || onRib[1] - 0.1 > node.pos[1]) {
+          // node.pos[0] = Math.max(onRib[0], onBow[0]);
+          if (i > railNodes / 2) {
+            node.pos[0] = onBow[0];
+            node.pos[2] = 0;
+            // trim the rest of the plank
+            for (let j = 0; j < railNodes - 1 - i; j++) {
+              plankPath.pop();
+            }
+            break;
+          }
+        }
+        // node.pos[1] = y;
+        // plankPath[i].pos[2] = 0; // TODO(@darzu):
+      }
+    }
+    appendBoard(builder.mesh, {
+      path: plankPath,
+      width: plankWidth,
+      depth: plankDepth,
+    });
+  }
+
   // FLOOR
   const floorPlankCount = 7;
   const floorSpace = 1.24;
   const floorLength = ribSpace * (ribCount - 1) + ribWidth * 2.0;
   const floorSegCount = 12;
   const floorHeight = 3.2;
-  builder.width = 0.6;
-  builder.depth = 0.2;
-  for (let i = 0; i < floorPlankCount; i++) {
-    mat4.identity(builder.cursor);
-    mat4.translate(
-      builder.cursor,
-      [
-        -ribWidth,
-        floorHeight - builder.depth,
-        (i - (floorPlankCount - 1) * 0.5) * floorSpace + jitter(0.01),
-      ],
-      builder.cursor
-    );
-    appendTimberFloorPlank(builder, floorLength, floorSegCount);
-  }
   const floorWidth = floorPlankCount * floorSpace;
+  if (false) {
+    builder.width = 0.6;
+    builder.depth = 0.2;
+    for (let i = 0; i < floorPlankCount; i++) {
+      mat4.identity(builder.cursor);
+      mat4.translate(
+        builder.cursor,
+        [
+          -ribWidth,
+          floorHeight - builder.depth,
+          (i - (floorPlankCount - 1) * 0.5) * floorSpace + jitter(0.01),
+        ],
+        builder.cursor
+      );
+      appendTimberFloorPlank(builder, floorLength, floorSegCount);
+    }
+  }
+
   // CEILING
   const ceilPlankCount = 8;
   const ceilSpace = 1.24;
   const ceilLength = ribSpace * (ribCount - 1) + ribWidth * 2.0;
   const ceilSegCount = 12;
   const ceilHeight = 12;
-  for (let i = 0; i < ceilPlankCount; i++) {
-    mat4.identity(builder.cursor);
-    mat4.translate(
-      builder.cursor,
-      [
-        -ribWidth,
-        ceilHeight,
-        (i - (ceilPlankCount - 1) * 0.5) * ceilSpace + jitter(0.01),
-      ],
-      builder.cursor
-    );
-    builder.width = 0.6;
-    builder.depth = 0.2;
-    appendTimberFloorPlank(builder, ceilLength, ceilSegCount);
+  if (false) {
+    for (let i = 0; i < ceilPlankCount; i++) {
+      mat4.identity(builder.cursor);
+      mat4.translate(
+        builder.cursor,
+        [
+          -ribWidth,
+          ceilHeight,
+          (i - (ceilPlankCount - 1) * 0.5) * ceilSpace + jitter(0.01),
+        ],
+        builder.cursor
+      );
+      builder.width = 0.6;
+      builder.depth = 0.2;
+      appendTimberFloorPlank(builder, ceilLength, ceilSegCount);
+    }
   }
+
   // WALLS
   // TODO(@darzu): keep in sync with rib path
   const wallLength = floorLength;
@@ -833,6 +940,63 @@ function createPathFromBezier(
     const rot = quatFromUpForward(quat.create(), up, tan);
     path.push({ pos, rot });
   }
+  return path;
+}
+const _numSamples = 100;
+const __tempSamples = range(_numSamples).map((i) => vec3.create());
+function createEvenPathFromBezier(
+  b: BezierCubic,
+  spacing: number,
+  up: vec3.InputT
+): Path {
+  const path: Path = [];
+  const samples = range(_numSamples).map((i) =>
+    bezierPosition(b, i / (_numSamples - 1), __tempSamples[i])
+  );
+  const distances: number[] = [];
+  let prevPos = samples[0];
+  let lastDist = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const newTravel = vec3.dist(samples[i], prevPos);
+    const dist = lastDist + newTravel;
+    prevPos = samples[i];
+    lastDist = dist;
+    distances.push(dist);
+  }
+  console.log("distances");
+  console.dir(distances);
+  let totalDistance = distances[distances.length - 1];
+  let numSeg = Math.floor(totalDistance / spacing);
+  let prevJ = 0;
+  for (let i = 0; i < numSeg; i++) {
+    const toTravel = i * spacing;
+    let prevDist = 0;
+    for (let j = prevJ; j < samples.length; j++) {
+      const nextDist = distances[j];
+      if (nextDist > toTravel) {
+        // find our spot
+        const span = nextDist - prevDist;
+        const extra = nextDist - toTravel;
+        const prevT = Math.max((j - 1) / (_numSamples - 1), 0);
+        const currT = j / (_numSamples - 1);
+        const bonusT = 1 - extra / span;
+        const t = prevT + bonusT * (currT - prevT);
+        prevJ = j;
+
+        // add our node
+        const pos = bezierPosition(b, t, vec3.create());
+        const tan = bezierTangent(b, t, vec3.tmp());
+        vec3.normalize(tan, tan);
+        const rot = quatFromUpForward(quat.create(), up, tan);
+        path.push({ pos, rot });
+        console.log(`adding: ${t} -> ${vec3Dbg(pos)}`);
+      }
+      prevDist = nextDist;
+    }
+  }
+  //  = samples.reduce((p, n, i) =>
+  // while (true) {}
+
   return path;
 }
 

@@ -141,6 +141,8 @@ import { addGizmoChild } from "../utils-game.js";
 
 const DBG_PLAYER = true;
 
+const DISABLE_PRIATES = true;
+
 let healthPercent = 100;
 
 const MAX_GOODBALLS = 10;
@@ -876,11 +878,17 @@ export async function initRogueGame(em: EntityManager, hosting: boolean) {
       // g.cameraFollow.yawOffset = 0.0;
       // g.cameraFollow.pitchOffset = -0.378;
 
-      vec3.copy(g.position, [-4.19, 39.19, 4.41]);
-      quat.copy(g.rotation, [0.0, -0.01, 0.0, 1.0]);
+      // vec3.copy(g.position, [-4.19, 39.19, 4.41]);
+      // quat.copy(g.rotation, [0.0, -0.01, 0.0, 1.0]);
+      // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
+      // g.cameraFollow.yawOffset = 0.0;
+      // g.cameraFollow.pitchOffset = -1.439;
+
+      vec3.copy(g.position, [21.62, 11.55, 15.21]);
+      quat.copy(g.rotation, [0.0, 0.21, 0.0, 0.98]);
       vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
       g.cameraFollow.yawOffset = 0.0;
-      g.cameraFollow.pitchOffset = -1.439;
+      g.cameraFollow.pitchOffset = -0.079;
     }
 
     if (!DBG_PLAYER) {
@@ -918,7 +926,7 @@ export async function initRogueGame(em: EntityManager, hosting: boolean) {
     }
   }
 
-  startPirates();
+  if (!DISABLE_PRIATES) startPirates();
 
   const startHealth = getCurrentHealth();
   {
