@@ -351,7 +351,7 @@ const EPSILON = 10.0;
 const MAX_THETA = (31 * Math.PI) / 64;
 const MIN_THETA = -(31 * Math.PI) / 64;
 const THETA_JITTER = Math.PI / 128;
-const PHI_JITTER = Math.PI / 64;
+const PHI_JITTER = Math.PI / 32;
 
 EM.registerSystem(
   [StoneTowerDef, WorldFrameDef],
