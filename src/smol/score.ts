@@ -1,8 +1,10 @@
+import { createRef } from "../em_helpers.js";
 import { EM } from "../entity-manager.js";
 import { PartyDef } from "../games/party.js";
 import { TextDef } from "../games/ui.js";
 import { ShipHealthDef } from "../ld53/ship-health.js";
 import { createAABB, pointInAABB } from "../physics/aabb.js";
+import { PhysicsStateDef } from "../physics/nonintersection.js";
 import { TimeDef } from "../time.js";
 import { setMap } from "./level-map.js";
 import { MapPaths } from "./map-loader.js";
@@ -18,7 +20,7 @@ export const ScoreDef = EM.defineComponent("score", () => ({
   levelEnding: false,
   levelEndedAt: 0,
   victory: false,
-  endZoneAABB: createAABB(),
+  endZone: createRef<[typeof PhysicsStateDef]>(0, [PhysicsStateDef]),
   // TODO: this is very hacky
   onLevelEnd: [] as (() => void)[],
   onGameEnd: [] as (() => void)[],
@@ -46,6 +48,7 @@ EM.registerSystem(
   (es, res) => {
     const ship = es[0];
     if (!ship) return;
+    if (!res.score.endZone()) return;
     if (res.score.gameEnding) {
       if (res.time.step > res.score.gameEndedAt + 300) {
         res.score.gameEnding = false;
@@ -78,7 +81,9 @@ EM.registerSystem(
       res.score.gameEnding = true;
       res.score.gameEndedAt = res.time.step;
       res.text.upperText = "LEVEL FAILED";
-    } else if (pointInAABB(res.score.endZoneAABB, res.party.pos)) {
+    } else if (
+      pointInAABB(res.score.endZone()!._phys.colliders[0].aabb, res.party.pos)
+    ) {
       console.log("res.score.levelNumber: " + res.score.levelNumber);
       console.log("MapPaths.length: " + MapPaths.length);
       if (res.score.levelNumber + 1 >= MapPaths.length) {

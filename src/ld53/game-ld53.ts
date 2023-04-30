@@ -86,6 +86,7 @@ import { BulletDef, breakBullet } from "../games/bullet.js";
 import { ParametricDef } from "../games/parametric-motion.js";
 import { createDock } from "./dock.js";
 import { ShipHealthDef } from "./ship-health.js";
+import { createRef } from "../em_helpers.js";
 /*
 NOTES:
 - Cut grass by updating a texture that has cut/not cut or maybe cut-height
@@ -360,6 +361,19 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   //   "shipBouyancy"
   // );
   // em.requireSystem("shipBouyancy");
+
+  // end zone
+  const endZonePos = level2DtoWorld3D(
+    level.levelMap.endZonePos,
+    5,
+    vec3.create()
+  );
+  let endZone = em.new();
+  em.ensureComponentOn(endZone, PositionDef, endZonePos);
+  em.ensureComponentOn(endZone, RenderableConstructDef, res.assets.cube.proto);
+  em.whenEntityHas(endZone, PhysicsStateDef).then(
+    (endZone) => (score.endZone = createRef(endZone))
+  );
 
   // player
   if (!DBG_PLAYER) {

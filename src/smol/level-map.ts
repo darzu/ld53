@@ -32,6 +32,7 @@ export const LevelMapDef = EM.defineComponent("levelMap", () => ({
   towers: [] as [vec2, vec2][],
   startPos: V(0, 0),
   windDir: V(0, 0),
+  endZonePos: V(0, 0),
 }));
 type LevelMap = Component<typeof LevelMapDef>;
 
@@ -251,12 +252,23 @@ export function parseAndMutateIntoMapData(
   const windBlob = windBlobs[0];
   const [_, windDir] = centerOfMassAndDirection(windBlob);
 
+  const endZoneBlobs = blobs.filter(
+    (b) => b.color[0] < 100 && b.color[1] > 200 && b.color[2] < 100
+  );
+  assert(
+    endZoneBlobs.length === 1,
+    `expected 1 end zone, found ${endZoneBlobs.length}`
+  );
+  const endZoneBlob = endZoneBlobs[0];
+  const endZonePos = aabbCenter2(vec2.create(), endZoneBlob.aabb);
+
   const levelMap: LevelMap = {
     land: landData,
     name,
     startPos,
     towers,
     windDir,
+    endZonePos,
   };
 
   // TODO(@darzu): DBG:
