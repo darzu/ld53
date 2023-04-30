@@ -429,6 +429,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     );
 
     resetWoodHealth(ship.woodHealth);
+    ship.shipHealth.health = 1;
     resetWoodState(ship.woodState);
     em.whenEntityHas(ship, RenderableDef, WoodStateDef).then((ship) =>
       res.renderer.renderer.stdPool.updateMeshQuads(

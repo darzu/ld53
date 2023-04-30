@@ -75,7 +75,7 @@ EM.registerSystem(
     const shipLength = selfAABB.max[2] - selfAABB.min[2];
     const halfLength = shipLength / 2;
     const shipCenter = V(res.party.pos[0], res.party.pos[2]);
-    console.log(`ship at ${shipCenter[0]}, ${shipCenter[1]}`);
+    //console.log(`ship at ${shipCenter[0]}, ${shipCenter[1]}`);
 
     // res.party.dir is Z
     vec2.set(

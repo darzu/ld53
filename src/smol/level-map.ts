@@ -217,7 +217,11 @@ export function parseAndMutateIntoMapData(
 
   //extract land data
   for (let blob of blobs) {
-    if (blob.color[0] < 50 && blob.color[1] < 50 && blob.color[2] < 50) {
+    // treat towers as land too (hack)
+    if (
+      (blob.color[0] < 50 && blob.color[1] < 50 && blob.color[2] < 50) ||
+      (blob.color[0] > 200 && blob.color[1] > 200 && blob.color[2] < 100)
+    ) {
       for (let r of blob.runs) {
         for (let x = r.x0; x < r.x1; x++) {
           // TODO(@darzu): parameterize this transform?
