@@ -45,6 +45,7 @@ interface Tower {
   lastFired: number;
   fireRate: number;
   projectileSpeed: number;
+  firingRadius: number;
 }
 
 export const StoneTowerDef = EM.defineComponent(
@@ -53,8 +54,9 @@ export const StoneTowerDef = EM.defineComponent(
     cannon: EntityW<
       [typeof PositionDef, typeof RotationDef, typeof WorldFrameDef]
     >,
-    fireRate = 1000,
-    projectileSpeed = 0.2
+    fireRate = 2000,
+    projectileSpeed = 0.15,
+    firingRadius = Math.PI / 8
   ) =>
     ({
       rows: [],
@@ -74,6 +76,7 @@ export const StoneTowerDef = EM.defineComponent(
       lastFired: 0,
       fireRate,
       projectileSpeed,
+      firingRadius,
     } as Tower)
 );
 
@@ -355,104 +358,122 @@ EM.registerSystem(
     const target = res.party.pos;
     if (!target) return;
     for (let tower of es) {
+      const invertedTransform = mat4.invert(tower.world.transform);
+      const towerSpaceTarget = vec3.transformMat4(target, invertedTransform);
+      /*
+      const prevTowerSpaceTarget = vec3.transformMat4(
+        __previousPartyPos,
+        invertedTransform
+      );
+
+      const targetVelocity = vec3.scale(
+        vec3.sub(towerSpaceTarget, prevTowerSpaceTarget),
+        1 / (res.time.time - __prevTime)
+      );
+
+      const zvelocity = targetVelocity[2];
+
+      const timeToZZero = -(towerSpaceTarget[2] / zvelocity);
+      if (timeToZZero < 0) {
+        // it's moving away, don't worry about it
+        continue;
+      }
+
+      // what will the x position be, relative to the cannon, when z = 0?
+      const x =
+        towerSpaceTarget[0] +
+        targetVelocity[0] * timeToZZero -
+        tower.stoneTower.cannon()!.position[0];
+      // y is probably constant, but calculate it just for fun
+      const y =
+        towerSpaceTarget[1] +
+        targetVelocity[1] * timeToZZero -
+        tower.stoneTower.cannon()!.position[1];
+      console.log(`timeToZZero=${timeToZZero}`);
+      */
+      let x = towerSpaceTarget[0] - tower.stoneTower.cannon()!.position[0];
+      const y = towerSpaceTarget[1] - tower.stoneTower.cannon()!.position[1];
+      const z = towerSpaceTarget[2];
+
+      if (x < 0) {
+        // target is behind us, don't worry about it
+        continue;
+      }
+
+      // cannon yaw to hit target
+      const phi = -Math.atan(z / x);
+
+      if (Math.abs(phi) > tower.stoneTower.firingRadius) {
+        continue;
+      }
+
+      x = Math.sqrt(x * x + z * z);
+
+      // now, find the angle from our cannon.
+      const v = tower.stoneTower.projectileSpeed;
+      const g = 10.0 * 0.00001;
+      // https://en.wikipedia.org/wiki/Projectile_motion#Angle_%CE%B8_required_to_hit_coordinate_(x,_y)
+      const theta1 = Math.atan(
+        (v * v + Math.sqrt(v * v * v * v - g * (g * x * x + 2 * y * v * v))) /
+          (g * x)
+      );
+      const theta2 = Math.atan(
+        (v * v - Math.sqrt(v * v * v * v - g * (g * x * x + 2 * y * v * v))) /
+          (g * x)
+      );
+
+      // prefer smaller theta
+      let theta = theta1;
+      if (theta2 < theta1) theta = theta2;
+      if (isNaN(theta) || theta > MAX_THETA) {
+        // no firing solution--target is too far
+        console.log("target will be in sights but too far away");
+        continue;
+      }
+      console.log(
+        `Firing solution found, theta1 is ${theta1} theta2 is ${theta2} x=${x} y=${y} v=${v} sqrt is ${Math.sqrt(
+          v * v * v * v - g * (g * x * x + 2 * y * v * v)
+        )}`
+      );
+      // ok, we have a firing solution. rotate to the right angle
+
+      const rot = tower.stoneTower.cannon()!.rotation;
+      quat.identity(rot);
+      quat.rotateY(rot, phi, rot);
+      quat.rotateZ(rot, theta, rot);
+
+      // OK, now we just need to know whether our time-of-flight matches up with the target's velocity
+      /*
+      const flightTime = x / (v * Math.cos(theta));
+      // fire if we are within a couple of frames
+      console.log(`flightTime=${flightTime} timeToZZero=${timeToZZero}`);
+      if (Math.abs(flightTime - timeToZZero) > 32) {
+        continue;
+      }*/
+      // maybe we can't actually fire yet?
       if (
-        tower.stoneTower.lastFired + tower.stoneTower.fireRate <=
+        tower.stoneTower.lastFired + tower.stoneTower.fireRate >
         res.time.time
       ) {
-        // we're able to fire. should we?
-        const invertedTransform = mat4.invert(tower.world.transform);
-        const towerSpaceTarget = vec3.transformMat4(target, invertedTransform);
-        const prevTowerSpaceTarget = vec3.transformMat4(
-          __previousPartyPos,
-          invertedTransform
-        );
-
-        const targetVelocity = vec3.scale(
-          vec3.sub(towerSpaceTarget, prevTowerSpaceTarget),
-          1 / (res.time.time - __prevTime)
-        );
-
-        const zvelocity = targetVelocity[2];
-        const timeToZZero = -(towerSpaceTarget[2] / zvelocity);
-        if (timeToZZero < 0) {
-          // it's moving away, don't worry about it
-          continue;
-        }
-
-        // what will the x position be, relative to the cannon, when z = 0?
-        const x =
-          towerSpaceTarget[0] +
-          targetVelocity[0] * timeToZZero -
-          tower.stoneTower.cannon()!.position[0];
-
-        // y is probably constant, but calculate it just for fun
-        const y =
-          towerSpaceTarget[1] +
-          targetVelocity[1] * timeToZZero -
-          tower.stoneTower.cannon()!.position[1];
-
-        console.log(`timeToZZero=${timeToZZero}`);
-
-        if (x < 0) {
-          // target is behind us, don't worry about it
-          continue;
-        }
-        // now, find the angle from our cannon.
-        const v = tower.stoneTower.projectileSpeed;
-        const g = 20.0 * 0.00001;
-        // https://en.wikipedia.org/wiki/Projectile_motion#Angle_%CE%B8_required_to_hit_coordinate_(x,_y)
-        const theta1 = Math.atan(
-          (v * v + Math.sqrt(v * v * v * v - g * (g * x * x + 2 * y * v * v))) /
-            (g * x)
-        );
-        const theta2 = Math.atan(
-          (v * v - Math.sqrt(v * v * v * v - g * (g * x * x + 2 * y * v * v))) /
-            (g * x)
-        );
-
-        // prefer positive theta
-        let theta = theta1;
-        if (theta2 > theta1) theta = theta2;
-        if (isNaN(theta) || theta > MAX_THETA) {
-          // no firing solution--target is too far
-          console.log("target will be in sights but too far away");
-          continue;
-        }
-        console.log(
-          `Firing solution found, theta1 is ${theta1} theta2 is ${theta2} x=${x} y=${y} v=${v} sqrt is ${Math.sqrt(
-            v * v * v * v - g * (g * x * x + 2 * y * v * v)
-          )}`
-        );
-        // ok, we have a firing solution. rotate to the right angle
-        const rot = tower.stoneTower.cannon()!.rotation;
-        quat.identity(rot);
-        quat.rotateZ(rot, theta, rot);
-
-        // OK, now we just need to know whether our time-of-flight matches up with the target's velocity
-        const flightTime = x / (v * Math.cos(theta));
-        // fire if we are within a couple of frames
-        console.log(`flightTime=${flightTime} timeToZZero=${timeToZZero}`);
-        if (Math.abs(flightTime - timeToZZero) > 32) {
-          continue;
-        }
-        const worldRot = quat.create();
-        mat4.getRotation(
-          mat4.mul(tower.world.transform, mat4.fromQuat(rot)),
-          worldRot
-        );
-        fireBullet(
-          EM,
-          2,
-          tower.stoneTower.cannon()!.world.position,
-          worldRot,
-          v,
-          0.02,
-          g,
-          2.0,
-          [1, 0, 0]
-        );
-        tower.stoneTower.lastFired = res.time.time;
+        continue;
       }
+      const worldRot = quat.create();
+      mat4.getRotation(
+        mat4.mul(tower.world.transform, mat4.fromQuat(rot)),
+        worldRot
+      );
+      fireBullet(
+        EM,
+        2,
+        tower.stoneTower.cannon()!.world.position,
+        worldRot,
+        v, // + jitter(v / 5),
+        0.02,
+        g,
+        2.0,
+        [1, 0, 0]
+      );
+      tower.stoneTower.lastFired = res.time.time;
     }
     vec3.copy(__previousPartyPos, target);
     __prevTime = res.time.time;
