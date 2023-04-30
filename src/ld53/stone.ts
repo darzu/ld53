@@ -213,7 +213,7 @@ const approxBrickHeight: number = 2;
 const brickDepth: number = 2.5;
 const coolMode: boolean = false;
 
-const towerPool = createEntityPool<
+export const towerPool = createEntityPool<
   [typeof StoneTowerDef, typeof PositionDef, typeof RotationDef]
 >({
   max: maxStoneTowers,
@@ -359,6 +359,14 @@ const towerPool = createEntityPool<
     return tower;
   },
   onSpawn: async (p) => {
+    const cannon = p.stoneTower.cannon()!;
+
+    EM.tryRemoveComponent(p.id, DeadDef);
+    EM.tryRemoveComponent(cannon.id, DeadDef);
+
+    if (RenderableDef.isOn(p)) p.renderable.hidden = false;
+    if (RenderableDef.isOn(cannon)) cannon.renderable.hidden = false;
+
     // platform.towerPlatform.tiltPeriod = tiltPeriod;
     // platform.towerPlatform.tiltTimer = tiltTimer;
     p.stoneTower.lastFired = 0;

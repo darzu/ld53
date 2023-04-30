@@ -84,7 +84,7 @@ import { GrassCutTexPtr, grassPoolPtr } from "../smol/std-grass.js";
 import { setWindAngle, WindDef } from "../smol/wind.js";
 import { createShip, ShipDef } from "../smol/ship.js";
 import { SAIL_FURL_RATE } from "../smol/sail.js";
-import { spawnStoneTower, StoneTowerDef } from "./stone.js";
+import { spawnStoneTower, StoneTowerDef, towerPool } from "./stone.js";
 import { LandDef } from "./land-ship.js";
 import { DeadDef } from "../delete.js";
 import { BulletDef, breakBullet } from "../games/bullet.js";
@@ -490,7 +490,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
 
     const towers = EM.filterEntities([StoneTowerDef]);
     for (let tower of towers) {
-      EM.ensureComponentOn(tower, DeadDef);
+      towerPool.despawn(tower);
     }
 
     // spawn towers
