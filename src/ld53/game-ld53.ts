@@ -363,16 +363,13 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   // em.requireSystem("shipBouyancy");
 
   // end zone
-  const endZonePos = level2DtoWorld3D(
-    level.levelMap.endZonePos,
-    5,
-    vec3.create()
-  );
-  let endZone = em.new();
-  em.ensureComponentOn(endZone, PositionDef, endZonePos);
-  em.ensureComponentOn(endZone, RenderableConstructDef, res.assets.cube.proto);
-  em.whenEntityHas(endZone, PhysicsStateDef).then(
-    (endZone) => (score.endZone = createRef(endZone))
+  const endZonePos = level2DtoWorld3D(level.levelMap.endZonePos, 5, vec3.tmp());
+  // DOCK
+  const dock = createDock();
+  vec3.copy(dock.position, endZonePos);
+
+  em.whenEntityHas(dock, PhysicsStateDef).then(
+    (dock) => (score.endZone = createRef(dock))
   );
 
   // player
@@ -608,10 +605,6 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     "deadBullets"
   );
   EM.requireGameplaySystem("deadBullets");
-
-  // DOCK
-  const dock = createDock();
-  dock.position[1] = 10;
 }
 
 async function createPlayer() {
