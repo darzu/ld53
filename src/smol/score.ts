@@ -1,11 +1,16 @@
+import { createRef } from "../em_helpers.js";
 import { EM } from "../entity-manager.js";
+import { PartyDef } from "../games/party.js";
 import { TextDef } from "../games/ui.js";
+import { ShipHealthDef } from "../ld53/ship-health.js";
+import { createAABB, pointInAABB } from "../physics/aabb.js";
+import { PhysicsStateDef } from "../physics/nonintersection.js";
 import { TimeDef } from "../time.js";
 import { setMap } from "./level-map.js";
 import { MapPaths } from "./map-loader.js";
+import { ShipDef } from "./ship.js";
 
 export const ScoreDef = EM.defineComponent("score", () => ({
-  shipHealth: 10000,
   cutPurple: 0,
   totalPurple: 0,
   completedLevels: 0,
@@ -15,32 +20,35 @@ export const ScoreDef = EM.defineComponent("score", () => ({
   levelEnding: false,
   levelEndedAt: 0,
   victory: false,
+  endZone: createRef<[typeof PhysicsStateDef]>(0, [PhysicsStateDef]),
   // TODO: this is very hacky
   onLevelEnd: [] as (() => void)[],
   onGameEnd: [] as (() => void)[],
 }));
 
 EM.registerSystem(
-  [],
+  [ShipHealthDef],
   [ScoreDef, TextDef],
-  (_, res) => {
+  (es, res) => {
+    const ship = es[0];
+    if (!ship) return;
     if (!res.score.gameEnding && !res.score.levelEnding) {
       // TODO(@darzu): re-IMPL
-      // res.text.upperText = `health: ${(res.score.shipHealth / 100).toFixed(
-      //   0
-      // )}\nharvested: ${(
-      //   (res.score.cutPurple / res.score.totalPurple) *
-      //   100
-      // ).toFixed(2)}%`;
+      res.text.upperText = `health: ${(ship.shipHealth.health * 100).toFixed(
+        0
+      )}`;
     }
   },
   "updateScoreDisplay"
 );
 
 EM.registerSystem(
-  [],
-  [ScoreDef, TextDef, TimeDef],
-  (_, res) => {
+  [ShipHealthDef],
+  [ScoreDef, TextDef, TimeDef, PartyDef],
+  (es, res) => {
+    const ship = es[0];
+    if (!ship) return;
+    if (!res.score.endZone()) return;
     if (res.score.gameEnding) {
       if (res.time.step > res.score.gameEndedAt + 300) {
         res.score.gameEnding = false;
@@ -49,7 +57,7 @@ EM.registerSystem(
           res.score.victory = false;
         }
         setMap(EM, MapPaths[res.score.levelNumber]);
-        res.score.shipHealth = 10000;
+        //res.score.shipHealth = 10000;
         for (let f of res.score.onLevelEnd) {
           f();
         }
@@ -63,17 +71,19 @@ EM.registerSystem(
         res.score.completedLevels++;
         res.score.levelNumber++;
         setMap(EM, MapPaths[res.score.levelNumber]);
-        res.score.shipHealth = 10000;
+        //res.score.shipHealth = 10000;
         for (let f of res.score.onLevelEnd) {
           f();
         }
       }
-    } else if (res.score.shipHealth <= 0) {
+    } else if (ship.shipHealth.health <= 0) {
       // END GAME
       res.score.gameEnding = true;
       res.score.gameEndedAt = res.time.step;
       res.text.upperText = "LEVEL FAILED";
-    } else if (res.score.cutPurple / res.score.totalPurple > 0.95) {
+    } else if (
+      pointInAABB(res.score.endZone()!._phys.colliders[0].aabb, res.party.pos)
+    ) {
       console.log("res.score.levelNumber: " + res.score.levelNumber);
       console.log("MapPaths.length: " + MapPaths.length);
       if (res.score.levelNumber + 1 >= MapPaths.length) {
