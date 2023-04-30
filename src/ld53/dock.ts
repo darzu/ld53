@@ -47,6 +47,7 @@ export function createDock() {
   return dock;
 }
 
+// const __tq1 = quat.create();
 export function createDockWood(): [Mesh, WoodState] {
   const _timberMesh = createEmptyMesh("dock");
 
@@ -68,7 +69,7 @@ export function createDockWood(): [Mesh, WoodState] {
 
     const path: Path = positions.map((pos) => ({
       pos,
-      rot: quat.fromEuler(Math.PI / 2, 0, 0),
+      rot: quat.fromEuler(Math.PI / 2, 0, 0, quat.create()),
     }));
 
     // dbgPathWithGizmos(path);
