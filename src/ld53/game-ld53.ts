@@ -432,6 +432,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
         ship.woodState.mesh.quad.length
       )
     );
+
     console.log("resetting dock position");
     const endZonePos = level2DtoWorld3D(
       level.levelMap.endZonePos,
@@ -439,6 +440,16 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
       vec3.tmp()
     );
     vec3.copy(dock.position, endZonePos);
+    resetWoodHealth(dock.woodHealth);
+    resetWoodState(dock.woodState);
+    em.whenEntityHas(dock, RenderableDef, WoodStateDef).then((dock) =>
+      res.renderer.renderer.stdPool.updateMeshQuads(
+        dock.renderable.meshHandle,
+        dock.woodState.mesh as Mesh,
+        0,
+        dock.woodState.mesh.quad.length
+      )
+    );
 
     const towers = EM.filterEntities([StoneTowerDef]);
     for (let tower of towers) {
