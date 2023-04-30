@@ -84,6 +84,7 @@ import { LandDef } from "./land-ship.js";
 import { DeadDef } from "../delete.js";
 import { BulletDef, breakBullet } from "../games/bullet.js";
 import { ParametricDef } from "../games/parametric-motion.js";
+import { createDock } from "./dock.js";
 /*
 NOTES:
 - Cut grass by updating a texture that has cut/not cut or maybe cut-height
@@ -99,7 +100,7 @@ PERF:
 [ ] reduce triangles on ocean
 */
 
-const DBG_PLAYER = false;
+const DBG_PLAYER = true;
 const SHIP_START_POS = V(100, 0, -100);
 
 // world map is centered around 0,0
@@ -518,15 +519,15 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     res.assets.gizmo.proto
   );
 
-  // debugging createGraph3D
-  let data: vec3[][] = [];
-  for (let x = 0; x < 12; x++) {
-    data[x] = [];
-    for (let z = 0; z < 7; z++) {
-      data[x][z] = V(x, x + z, z);
-    }
-  }
-  createGraph3D(vec3.add(worldGizmo.position, [50, 10, 50], V(0, 0, 0)), data);
+  // // debugging createGraph3D
+  // let data: vec3[][] = [];
+  // for (let x = 0; x < 12; x++) {
+  //   data[x] = [];
+  //   for (let z = 0; z < 7; z++) {
+  //     data[x][z] = V(x, x + z, z);
+  //   }
+  // }
+  // createGraph3D(vec3.add(worldGizmo.position, [50, 10, 50], V(0, 0, 0)), data);
 
   const tower3dPosesAndDirs: [vec3, number][] = level.levelMap.towers.map(
     ([tPos, tDir]) => [
@@ -585,6 +586,10 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     "deadBullets"
   );
   EM.requireGameplaySystem("deadBullets");
+
+  // DOCK
+  const dock = createDock();
+  dock.position[1] = 10;
 }
 
 async function createPlayer() {
