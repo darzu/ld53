@@ -35,7 +35,7 @@ import { TimeDef } from "../time.js";
 import { assert } from "../util.js";
 import { vec3Dbg } from "../utils-3d.js";
 
-const SAMPLES_PER_EDGE = 5;
+const SAMPLES_PER_EDGE = 3;
 const NUDGE_DIST = 1.0;
 
 export const LandDef = EM.defineComponent(
