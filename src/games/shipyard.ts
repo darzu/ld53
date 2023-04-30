@@ -872,7 +872,10 @@ export function createHomeShip(): HomeShip {
   // ROTATE WHOLE THING (YIKES)
   {
     const rotate = quat.fromEuler(0, -Math.PI / 2, 0);
-    _timberMesh.pos.forEach((v) => vec3.transformQuat(v, rotate, v));
+    _timberMesh.pos.forEach((v) => {
+      vec3.transformQuat(v, rotate, v);
+      vec3.add(v, [0, -floorHeight, 0], v);
+    });
   }
 
   // console.dir(_timberMesh.colors);
@@ -987,6 +990,7 @@ export function appendTimberFloorPlank(
   return b.mesh;
 }
 
+// TODO(@darzu): BAD: wood.ts has an "interface Board" too
 interface Board {
   path: Path;
 

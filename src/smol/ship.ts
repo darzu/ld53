@@ -30,7 +30,8 @@ import { createSock } from "./windsock.js";
 import { BARGE_AABBS, SHIP_SMALL_AABBS } from "../primatives.js";
 import { ENDESGA16 } from "../color/palettes.js";
 import { createHomeShip } from "../games/shipyard.js";
-import { transformMesh } from "../render/mesh.js";
+import { getAABBFromMesh, transformMesh } from "../render/mesh.js";
+import { createWoodHealth, WoodHealthDef, WoodStateDef } from "../wood.js";
 
 export const ShipDef = EM.defineComponent("ld52ship", () => ({
   mast: createRef(0, [MastDef, RotationDef]),
@@ -65,22 +66,33 @@ export async function createShip(em: EntityManager) {
     homeShip.timberMesh
     // res.assets.ship_small.proto
   );
+  em.ensureComponentOn(ent, WoodStateDef, homeShip.timberState);
   // em.set(ent, ColliderDef, {
   //   shape: "AABB",
   //   solid: true,
   //   aabb: res.assets.ship.aabb,
   // });
-  const mc: MultiCollider = {
-    shape: "Multi",
-    solid: true,
-    // TODO(@darzu): integrate these in the assets pipeline
-    children: SHIP_SMALL_AABBS.map((aabb) => ({
-      shape: "AABB",
-      solid: true,
-      aabb,
-    })),
-  };
-  em.ensureComponentOn(ent, ColliderDef, mc);
+
+  const timberHealth = createWoodHealth(homeShip.timberState);
+  em.ensureComponentOn(ent, WoodHealthDef, timberHealth);
+
+  const timberAABB = getAABBFromMesh(homeShip.timberMesh);
+
+  // const mc: MultiCollider = {
+  //   shape: "Multi",
+  //   solid: true,
+  //   // TODO(@darzu): integrate these in the assets pipeline
+  //   children: SHIP_SMALL_AABBS.map((aabb) => ({
+  //     shape: "AABB",
+  //     solid: true,
+  //     aabb,
+  //   })),
+  // };
+  em.ensureComponentOn(ent, ColliderDef, {
+    shape: "AABB",
+    solid: false,
+    aabb: timberAABB,
+  });
   em.ensureComponentOn(ent, PositionDef, V(0, 2, 0));
   em.ensureComponentOn(ent, RotationDef);
   em.ensureComponentOn(ent, LinearVelocityDef);

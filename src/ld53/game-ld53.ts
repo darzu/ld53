@@ -92,7 +92,7 @@ PERF:
 [ ] reduce triangles on ocean
 */
 
-const DBG_PLAYER = true;
+const DBG_PLAYER = false;
 const SHIP_START_POS = V(100, 0, -100);
 
 // world map is centered around 0,0
@@ -310,6 +310,10 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   );
 
   const ship = await createShip(em);
+
+  EM.requireSystem("runWooden");
+  EM.requireSystem("woodHealth");
+
   // move down
   // ship.position[2] = -WORLD_SIZE * 0.5 * 0.6;
   level2DtoWorld3D(level.levelMap.startPos, 15, ship.position);
