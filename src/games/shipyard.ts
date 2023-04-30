@@ -267,7 +267,7 @@ export function createHomeShip(): HomeShip {
     keelPath.forEach((p) => updateAABBWithPoint(tempAABB, p.pos));
     translatePath(keelPath, [0, -tempAABB.min[1], 0]);
 
-    dbgPathWithGizmos(keelPath);
+    // dbgPathWithGizmos(keelPath);
   }
 
   function fixPathBasis(
@@ -482,7 +482,7 @@ export function createHomeShip(): HomeShip {
       fixPathBasis(even, [0, 0, 1], [0, 1, 0], [-1, 0, 0]);
       translatePathAlongNormal(even, ribDepth); // + 0.3);
       // fixPathBasis(even, [0, 1, 0], [1, 0, 0], [0, 0, -1]);
-      dbgPathWithGizmos(even);
+      // dbgPathWithGizmos(even);
       // dbgPathWithGizmos([even[0]]);
       evenRibs.push(even);
       if (even.length > plankCount) {
@@ -564,30 +564,37 @@ export function createHomeShip(): HomeShip {
     });
   }
 
+  function lerpBetween(start: vec3, end: vec3, numNewMid: number): vec3[] {
+    const positions: vec3[] = [];
+    positions.push(start);
+    for (let i = 0; i < numNewMid; i++) {
+      const t = (i + 1) / (numNewMid + 2 - 1);
+      const pos = vec3.lerp(start, end, t, vec3.create());
+      positions.push(pos);
+    }
+    positions.push(end);
+    return positions;
+  }
+
   // TRANSOM
   for (let i = 0; i < transomPlankNum; i++) {
     const start = plankPaths[i][0];
     const end = plankPathsMirrored[i][0];
     const length = vec3.dist(start.pos, end.pos);
-    const numDesired = Math.ceil(length / ribSpace);
-    let path: Path = [];
+    const transomSegLen = 3.0;
+    const numDesired = Math.max(Math.ceil(length / transomSegLen), 2);
 
-    path.push(start);
-    for (let j = 1; j < numDesired - 1; j++) {
-      const pos = vec3.lerp(
-        start.pos,
-        end.pos,
-        j / (numDesired - 1),
-        vec3.create()
-      );
-      path.push({
-        pos,
-        rot: quat.clone(start.rot),
-      });
-    }
-    path.push(end);
+    let positions = lerpBetween(start.pos, end.pos, numDesired - 2);
+    // console.log(numDesired);
+    // console.log(positions.length);
+    assert(positions.length === numDesired);
+    let path: Path = positions.map((pos) => ({
+      pos,
+      rot: quat.clone(start.rot),
+    }));
 
-    if (i == 2) dbgPathWithGizmos(path);
+    // if (i == 2)
+    // dbgPathWithGizmos(path);
     for (let n of path) {
       quat.fromEuler(-Math.PI / 2, 0, Math.PI / 2, n.rot);
       quat.rotateY(n.rot, -Math.PI / 16, n.rot);
@@ -620,223 +627,247 @@ export function createHomeShip(): HomeShip {
     });
   }
 
-  if (false) {
+  // FLOOR
+  let floorPlankIdx = 4;
+  const floorBound1 = plankPaths[floorPlankIdx];
+  const floorBound2 = plankPathsMirrored[floorPlankIdx];
+  let floorHeight = floorBound1[0].pos[1];
+  let floorWidth = 0;
+  let midIdx = 0;
+  for (let i = 0; i < floorBound1.length; i++) {
+    const dist = vec3.dist(floorBound1[i].pos, floorBound2[i].pos);
+    if (dist > floorWidth) {
+      floorWidth = dist;
+      midIdx = i;
+    }
+  }
+  let floorLength = -1;
+  {
+    const boundFore = floorBound1.reduce(
+      (p, n, i) => (i >= midIdx ? [...p, n] : p),
+      [] as Path
+    );
+    boundFore.reverse();
+    const boundAft = floorBound1.reduce(
+      (p, n, i) => (i < midIdx ? [...p, n] : p),
+      [] as Path
+    );
+    console.log("fore and aft:");
+    console.dir(boundFore);
+    console.dir(boundAft);
+    const floorBoardWidth = 1.2;
+    const floorBoardGap = 0.05;
+    // console.log(`ribSpace: ${ribSpace}`);
+    const floorSegLength = 4.0;
+    const halfNumFloorBoards = Math.floor(floorWidth / floorBoardWidth / 2);
     const __t1 = vec3.create();
-    const __t2 = vec3.create();
-    for (let i = 0; i < plankCount; i++) {
-      const plankPath = clonePath(railPath);
-      const plankYOff = -plankWidth * 2.1 * i;
-      translatePath(plankPath, [0, plankYOff, 0]);
-      for (let i = 0; i < railNodes; i++) {
-        const node = plankPath[i];
-        // if (i === railNodes - 1) {
-        //   node.pos[2] = 0;
-        // } else
-        if (i === 0) {
-          // TODO(@darzu): FIX TRANSOM AREA!!
-          const ribPath = ribPaths[0];
-          const snapped = snapToPath(ribPath, node.pos[1], 1, __t1);
-          node.pos[2] = snapped[2];
-        } else {
-          // sternKeelPath
-          const ribIdx = Math.min(i - 1, ribPaths.length - 1);
-          const ribPath = ribPaths[ribIdx];
-          // const y = node.pos[1];
-          const onRib = snapToPath(ribPath, node.pos[1], 1, __t1);
-          const onBow = snapToPath(bowKeelPath, node.pos[1], 1, __t2);
-          node.pos[0] = onRib[0];
-          node.pos[2] = onRib[2];
-          if (i === railNodes - 1 || onRib[1] - 0.1 > node.pos[1]) {
-            // node.pos[0] = Math.max(onRib[0], onBow[0]);
-            if (i > railNodes / 2) {
-              node.pos[0] = onBow[0];
-              node.pos[2] = 0;
-              // trim the rest of the plank
-              for (let j = 0; j < railNodes - 1 - i; j++) {
-                plankPath.pop();
-              }
-              break;
-            }
-          }
-          // node.pos[1] = y;
-          // plankPath[i].pos[2] = 0; // TODO(@darzu):
-        }
-      }
+    for (let i = 0; i < halfNumFloorBoards; i++) {
+      const z = i * floorBoardWidth + floorBoardWidth * 0.5;
+      const fore = V(0, floorHeight, z);
+      const foreSnap = snapToPath(boundFore, fore[2], 2, __t1);
+      console.log(`foreSnap: ${vec3Dbg(foreSnap)}`);
+      fore[0] = foreSnap[0] - 1.0;
+      const aft = V(0, floorHeight, z);
+      const aftSnap = snapToPath(boundAft, aft[2], 2, __t1);
+      aft[0] = aftSnap[0] + 1.0;
+      // const positions = [aft, fore];
+      const length = fore[0] - aft[0];
+      if (i === 0) floorLength = length;
+      const numDesired = Math.ceil(length / floorSegLength);
+      const positions = lerpBetween(aft, fore, numDesired - 2);
+      // TODO(@darzu): LERP!
+      const path: Path = positions.map((pos) => ({
+        pos,
+        rot: quat.fromEuler(0, -Math.PI / 2, -Math.PI / 2),
+      }));
+      // dbgPathWithGizmos(path);
+      let mirroredPath = mirrorPath(clonePath(path), [0, 0, 1]);
       appendBoard(builder.mesh, {
-        path: plankPath,
-        width: plankWidth,
+        path: path,
+        width: floorBoardWidth / 2 - floorBoardGap,
         depth: plankDepth,
       });
+      appendBoard(builder.mesh, {
+        path: mirroredPath,
+        width: floorBoardWidth / 2 - floorBoardGap,
+        depth: plankDepth,
+      });
+      // break; // TODO(@darzu):
     }
   }
 
-  // FLOOR
-  const floorPlankCount = 7;
-  const floorSpace = 1.24;
-  const floorLength = ribSpace * (ribCount - 1) + ribWidth * 2.0;
-  const floorSegCount = 12;
-  const floorHeight = 3.2;
-  const floorWidth = floorPlankCount * floorSpace;
-  if (false) {
-    builder.width = 0.6;
-    builder.depth = 0.2;
-    for (let i = 0; i < floorPlankCount; i++) {
-      mat4.identity(builder.cursor);
-      mat4.translate(
-        builder.cursor,
-        [
-          -ribWidth,
-          floorHeight - builder.depth,
-          (i - (floorPlankCount - 1) * 0.5) * floorSpace + jitter(0.01),
-        ],
-        builder.cursor
-      );
-      appendTimberFloorPlank(builder, floorLength, floorSegCount);
-    }
-  }
+  const ceilHeight = floorHeight + 15;
+  // const floorHeight = 10;
+  // const floorLength = 10;
+  // const floorWidth = 10;
 
-  // CEILING
-  const ceilPlankCount = 8;
-  const ceilSpace = 1.24;
-  const ceilLength = ribSpace * (ribCount - 1) + ribWidth * 2.0;
-  const ceilSegCount = 12;
-  const ceilHeight = 12;
-  if (false) {
-    for (let i = 0; i < ceilPlankCount; i++) {
-      mat4.identity(builder.cursor);
-      mat4.translate(
-        builder.cursor,
-        [
-          -ribWidth,
-          ceilHeight,
-          (i - (ceilPlankCount - 1) * 0.5) * ceilSpace + jitter(0.01),
-        ],
-        builder.cursor
-      );
-      builder.width = 0.6;
-      builder.depth = 0.2;
-      appendTimberFloorPlank(builder, ceilLength, ceilSegCount);
-    }
-  }
-
-  // WALLS
-  // TODO(@darzu): keep in sync with rib path
-  const wallLength = floorLength;
-  const wallSegCount = 8;
-  // for (let i = 0; i < 6; i++) {
-  // mat4.identity(builder.cursor);
-  // mat4.translate(builder.cursor, builder.cursor, [0, 1, 0]);
-  builder.width = 0.45;
-  builder.depth = 0.2;
-  if (false)
-    for (let ccwi = 0; ccwi < 2; ccwi++) {
-      const ccw = ccwi === 0;
-      const ccwf = ccw ? -1 : 1;
-      let xFactor = 0.05;
-
-      const wallOffset: vec3 = V(-ribWidth, 0, ribDepth * -ccwf);
-
-      const cursor2 = mat4.create();
-      mat4.rotateX(cursor2, Math.PI * 0.4 * -ccwf, cursor2);
-
-      // mat4.copy(builder.cursor, cursor2);
-      // mat4.translate(builder.cursor, builder.cursor, wallOffset);
-      // appendTimberWallPlank(builder, wallLength, wallSegCount);
-
-      mat4.copy(builder.cursor, cursor2);
-      mat4.translate(builder.cursor, [0, 1, 0], builder.cursor);
-      // mat4.rotateX(builder.cursor, builder.cursor, Math.PI * xFactor * ccwf);
-      // mat4.rotateX(builder.cursor, builder.cursor, Math.PI * xFactor * ccwf);
-      mat4.translate(builder.cursor, wallOffset, builder.cursor);
-      appendTimberWallPlank(builder, wallLength, wallSegCount, -1);
-
-      for (let i = 0; i < numRibSegs; i++) {
-        mat4.translate(cursor2, [0, 2, 0], cursor2);
-        mat4.rotateX(cursor2, Math.PI * xFactor * ccwf, cursor2);
-
-        // plank 1
-        mat4.copy(builder.cursor, cursor2);
-        mat4.translate(builder.cursor, wallOffset, builder.cursor);
-        appendTimberWallPlank(builder, wallLength, wallSegCount, i);
-
-        // plank 2
-        mat4.copy(builder.cursor, cursor2);
-        mat4.translate(builder.cursor, [0, 1, 0], builder.cursor);
-        mat4.rotateX(
-          builder.cursor,
-          Math.PI * xFactor * 1.0 * ccwf,
-          builder.cursor
-        );
-        mat4.translate(builder.cursor, wallOffset, builder.cursor);
-        appendTimberWallPlank(builder, wallLength, wallSegCount, i + 0.5);
-
-        mat4.rotateX(cursor2, Math.PI * xFactor * ccwf, cursor2);
-        xFactor = xFactor - 0.005;
-      }
-      mat4.translate(cursor2, [0, 2, 0], cursor2);
-    }
+  // // FLOOR (old)
+  // const floorPlankCount = 7;
+  // const floorSpace = 1.24;
+  // const floorLength = ribSpace * (ribCount - 1) + ribWidth * 2.0;
+  // const floorSegCount = 12;
+  // const floorHeight = 3.2;
+  // const floorWidth = floorPlankCount * floorSpace;
+  // if (false) {
+  //   builder.width = 0.6;
+  //   builder.depth = 0.2;
+  //   for (let i = 0; i < floorPlankCount; i++) {
+  //     mat4.identity(builder.cursor);
+  //     mat4.translate(
+  //       builder.cursor,
+  //       [
+  //         -ribWidth,
+  //         floorHeight - builder.depth,
+  //         (i - (floorPlankCount - 1) * 0.5) * floorSpace + jitter(0.01),
+  //       ],
+  //       builder.cursor
+  //     );
+  //     appendTimberFloorPlank(builder, floorLength, floorSegCount);
+  //   }
   // }
 
-  // FRONT AND BACK WALL
-  let _floorWidth = floorWidth;
-  if (false) {
-    let wallSegCount = 6;
-    let numRibSegs = 6;
-    let floorWidth = _floorWidth + 4;
-    for (let ccwi = 0; ccwi < 2; ccwi++) {
-      const ccw = ccwi === 0;
-      const ccwf = ccw ? -1 : 1;
-      let xFactor = 0.05;
+  // // CEILING
+  // const ceilPlankCount = 8;
+  // const ceilSpace = 1.24;
+  // const ceilLength = ribSpace * (ribCount - 1) + ribWidth * 2.0;
+  // const ceilSegCount = 12;
+  // const ceilHeight = 12;
+  // if (false) {
+  //   for (let i = 0; i < ceilPlankCount; i++) {
+  //     mat4.identity(builder.cursor);
+  //     mat4.translate(
+  //       builder.cursor,
+  //       [
+  //         -ribWidth,
+  //         ceilHeight,
+  //         (i - (ceilPlankCount - 1) * 0.5) * ceilSpace + jitter(0.01),
+  //       ],
+  //       builder.cursor
+  //     );
+  //     builder.width = 0.6;
+  //     builder.depth = 0.2;
+  //     appendTimberFloorPlank(builder, ceilLength, ceilSegCount);
+  //   }
+  // }
 
-      const wallOffset: vec3 = V(-ribWidth, 0, ribDepth * -ccwf);
+  // // WALLS
+  // // TODO(@darzu): keep in sync with rib path
+  // const wallLength = floorLength;
+  // const wallSegCount = 8;
+  // // for (let i = 0; i < 6; i++) {
+  // // mat4.identity(builder.cursor);
+  // // mat4.translate(builder.cursor, builder.cursor, [0, 1, 0]);
+  // builder.width = 0.45;
+  // builder.depth = 0.2;
+  // if (false)
+  //   for (let ccwi = 0; ccwi < 2; ccwi++) {
+  //     const ccw = ccwi === 0;
+  //     const ccwf = ccw ? -1 : 1;
+  //     let xFactor = 0.05;
 
-      const cursor2 = mat4.create();
-      // mat4.rotateX(cursor2, cursor2, Math.PI * 0.4 * -ccwf);
-      // mat4.rotateX(cursor2, cursor2, Math.PI * 0.4 * -ccwf);
-      mat4.rotateY(cursor2, Math.PI * 0.5, cursor2);
-      if (ccw) {
-        mat4.translate(cursor2, [0, 0, floorLength - ribWidth * 2.0], cursor2);
-      }
-      mat4.translate(cursor2, [-6, 0, 0], cursor2);
+  //     const wallOffset: vec3 = V(-ribWidth, 0, ribDepth * -ccwf);
 
-      mat4.copy(builder.cursor, cursor2);
-      mat4.translate(builder.cursor, [0, 1, 0], builder.cursor);
-      // mat4.rotateX(builder.cursor, builder.cursor, Math.PI * xFactor * ccwf);
-      // mat4.rotateX(builder.cursor, builder.cursor, Math.PI * xFactor * ccwf);
-      mat4.translate(builder.cursor, wallOffset, builder.cursor);
-      appendTimberWallPlank(builder, floorWidth, wallSegCount, -1);
+  //     const cursor2 = mat4.create();
+  //     mat4.rotateX(cursor2, Math.PI * 0.4 * -ccwf, cursor2);
 
-      for (let i = 0; i < numRibSegs; i++) {
-        mat4.translate(cursor2, [0, 2, 0], cursor2);
-        // mat4.rotateX(cursor2, cursor2, Math.PI * xFactor * ccwf);
+  //     // mat4.copy(builder.cursor, cursor2);
+  //     // mat4.translate(builder.cursor, builder.cursor, wallOffset);
+  //     // appendTimberWallPlank(builder, wallLength, wallSegCount);
 
-        // plank 1
-        mat4.copy(builder.cursor, cursor2);
-        mat4.translate(builder.cursor, wallOffset, builder.cursor);
-        appendTimberWallPlank(builder, floorWidth, wallSegCount, i);
+  //     mat4.copy(builder.cursor, cursor2);
+  //     mat4.translate(builder.cursor, [0, 1, 0], builder.cursor);
+  //     // mat4.rotateX(builder.cursor, builder.cursor, Math.PI * xFactor * ccwf);
+  //     // mat4.rotateX(builder.cursor, builder.cursor, Math.PI * xFactor * ccwf);
+  //     mat4.translate(builder.cursor, wallOffset, builder.cursor);
+  //     appendTimberWallPlank(builder, wallLength, wallSegCount, -1);
 
-        // plank 2
-        mat4.copy(builder.cursor, cursor2);
-        mat4.translate(builder.cursor, [0, 1, 0], builder.cursor);
-        // mat4.rotateX(
-        //   builder.cursor,
-        //   builder.cursor,
-        //   Math.PI * xFactor * 1.0 * ccwf
-        // );
-        // mat4.rotateX(
-        //   builder.cursor,
-        //   builder.cursor,
-        //   Math.PI * xFactor * 1.0 * ccwf
-        // );
-        mat4.translate(builder.cursor, wallOffset, builder.cursor);
-        appendTimberWallPlank(builder, floorWidth, wallSegCount, i + 0.5);
+  //     for (let i = 0; i < numRibSegs; i++) {
+  //       mat4.translate(cursor2, [0, 2, 0], cursor2);
+  //       mat4.rotateX(cursor2, Math.PI * xFactor * ccwf, cursor2);
 
-        // mat4.rotateX(cursor2, cursor2, Math.PI * xFactor * ccwf);
-        // xFactor = xFactor - 0.005;
-      }
-      mat4.translate(cursor2, [0, 2, 0], cursor2);
-    }
-  }
+  //       // plank 1
+  //       mat4.copy(builder.cursor, cursor2);
+  //       mat4.translate(builder.cursor, wallOffset, builder.cursor);
+  //       appendTimberWallPlank(builder, wallLength, wallSegCount, i);
+
+  //       // plank 2
+  //       mat4.copy(builder.cursor, cursor2);
+  //       mat4.translate(builder.cursor, [0, 1, 0], builder.cursor);
+  //       mat4.rotateX(
+  //         builder.cursor,
+  //         Math.PI * xFactor * 1.0 * ccwf,
+  //         builder.cursor
+  //       );
+  //       mat4.translate(builder.cursor, wallOffset, builder.cursor);
+  //       appendTimberWallPlank(builder, wallLength, wallSegCount, i + 0.5);
+
+  //       mat4.rotateX(cursor2, Math.PI * xFactor * ccwf, cursor2);
+  //       xFactor = xFactor - 0.005;
+  //     }
+  //     mat4.translate(cursor2, [0, 2, 0], cursor2);
+  //   }
+  // // }
+
+  // // FRONT AND BACK WALL
+  // let _floorWidth = floorWidth;
+  // if (false) {
+  //   let wallSegCount = 6;
+  //   let numRibSegs = 6;
+  //   let floorWidth = _floorWidth + 4;
+  //   for (let ccwi = 0; ccwi < 2; ccwi++) {
+  //     const ccw = ccwi === 0;
+  //     const ccwf = ccw ? -1 : 1;
+  //     let xFactor = 0.05;
+
+  //     const wallOffset: vec3 = V(-ribWidth, 0, ribDepth * -ccwf);
+
+  //     const cursor2 = mat4.create();
+  //     // mat4.rotateX(cursor2, cursor2, Math.PI * 0.4 * -ccwf);
+  //     // mat4.rotateX(cursor2, cursor2, Math.PI * 0.4 * -ccwf);
+  //     mat4.rotateY(cursor2, Math.PI * 0.5, cursor2);
+  //     if (ccw) {
+  //       mat4.translate(cursor2, [0, 0, floorLength - ribWidth * 2.0], cursor2);
+  //     }
+  //     mat4.translate(cursor2, [-6, 0, 0], cursor2);
+
+  //     mat4.copy(builder.cursor, cursor2);
+  //     mat4.translate(builder.cursor, [0, 1, 0], builder.cursor);
+  //     // mat4.rotateX(builder.cursor, builder.cursor, Math.PI * xFactor * ccwf);
+  //     // mat4.rotateX(builder.cursor, builder.cursor, Math.PI * xFactor * ccwf);
+  //     mat4.translate(builder.cursor, wallOffset, builder.cursor);
+  //     appendTimberWallPlank(builder, floorWidth, wallSegCount, -1);
+
+  //     for (let i = 0; i < numRibSegs; i++) {
+  //       mat4.translate(cursor2, [0, 2, 0], cursor2);
+  //       // mat4.rotateX(cursor2, cursor2, Math.PI * xFactor * ccwf);
+
+  //       // plank 1
+  //       mat4.copy(builder.cursor, cursor2);
+  //       mat4.translate(builder.cursor, wallOffset, builder.cursor);
+  //       appendTimberWallPlank(builder, floorWidth, wallSegCount, i);
+
+  //       // plank 2
+  //       mat4.copy(builder.cursor, cursor2);
+  //       mat4.translate(builder.cursor, [0, 1, 0], builder.cursor);
+  //       // mat4.rotateX(
+  //       //   builder.cursor,
+  //       //   builder.cursor,
+  //       //   Math.PI * xFactor * 1.0 * ccwf
+  //       // );
+  //       // mat4.rotateX(
+  //       //   builder.cursor,
+  //       //   builder.cursor,
+  //       //   Math.PI * xFactor * 1.0 * ccwf
+  //       // );
+  //       mat4.translate(builder.cursor, wallOffset, builder.cursor);
+  //       appendTimberWallPlank(builder, floorWidth, wallSegCount, i + 0.5);
+
+  //       // mat4.rotateX(cursor2, cursor2, Math.PI * xFactor * ccwf);
+  //       // xFactor = xFactor - 0.005;
+  //     }
+  //     mat4.translate(cursor2, [0, 2, 0], cursor2);
+  //   }
+  // }
 
   // console.dir(_timberMesh.colors);
   _timberMesh.surfaceIds = _timberMesh.colors.map((_, i) => i);
@@ -1247,6 +1278,8 @@ function makeRibPathWierd(idx: number): Path {
 // }
 
 function appendBoard(mesh: RawMesh, board: Board) {
+  // TODO(@darzu): build up wood state along with the mesh!
+
   assert(board.path.length >= 2, `invalid board path!`);
   // TODO(@darzu): de-duplicate with TimberBuilder
   const firstQuadIdx = mesh.quad.length;
