@@ -704,7 +704,7 @@ export async function initSmol(em: EntityManager, hosting: boolean) {
         winYi < 0 ||
         grassCutTex.size[1] <= winYi + winHi
       ) {
-        res.score.shipHealth -= 320;
+        //res.score.shipHealth -= 320;
         return;
       }
 
@@ -785,10 +785,10 @@ export async function initSmol(em: EntityManager, hosting: boolean) {
 
       // console.log(healthChanges);
 
-      res.score.shipHealth = Math.min(
-        res.score.shipHealth + healthChanges,
-        10000
-      );
+      // res.score.shipHealth = Math.min(
+      //   res.score.shipHealth + healthChanges,
+      //   10000
+      // );
       res.score.cutPurple += cutPurple;
 
       // copy from world texture data to update window

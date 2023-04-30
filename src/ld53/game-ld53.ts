@@ -85,6 +85,7 @@ import { DeadDef } from "../delete.js";
 import { BulletDef, breakBullet } from "../games/bullet.js";
 import { ParametricDef } from "../games/parametric-motion.js";
 import { createDock } from "./dock.js";
+import { ShipHealthDef } from "./ship-health.js";
 /*
 NOTES:
 - Cut grass by updating a texture that has cut/not cut or maybe cut-height
@@ -323,6 +324,8 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   EM.requireSystem("runWooden");
   EM.requireSystem("woodHealth");
 
+  EM.ensureComponentOn(ship, ShipHealthDef);
+  EM.requireSystem("updateShipHealth");
   // move down
   // ship.position[2] = -WORLD_SIZE * 0.5 * 0.6;
   level2DtoWorld3D(level.levelMap.startPos, 8, ship.position);
@@ -431,6 +434,11 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     sail.unfurledAmount = sail.minFurl;
     ship.ld52ship.cuttingEnabled = true;
     ship.ld52ship.rudder()!.yawpitch.yaw = 0;
+    setWindAngle(
+      wind,
+      Math.atan2(-level.levelMap.windDir[0], -level.levelMap.windDir[1]) +
+        Math.PI / 2
+    );
   });
 
   EM.registerSystem(
