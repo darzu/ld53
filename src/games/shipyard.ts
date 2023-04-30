@@ -395,12 +395,12 @@ export function createHomeShip(): HomeShip {
       const p2 = vec3.add(p3, [0, -5, 2], vec3.create());
       ribCurve = { p0, p1, p2, p3 };
 
-      if (i === 0) {
-        console.dir(railPath);
-        console.log(vec3Dbg(ribStart));
-        console.log(vec3Dbg(ribEnd));
-        console.dir(ribCurve);
-      }
+      // if (i === 0) {
+      //   console.dir(railPath);
+      //   console.log(vec3Dbg(ribStart));
+      //   console.log(vec3Dbg(ribEnd));
+      //   console.dir(ribCurve);
+      // }
     }
     ribCurves.push(ribCurve);
 
@@ -492,7 +492,7 @@ export function createHomeShip(): HomeShip {
       ribIdx++;
     }
   }
-  console.log(`plankCount: ${plankCount}`);
+  // console.log(`plankCount: ${plankCount}`);
 
   // PLANKS (take 2)
   // const centerRibP = ribPaths[longestRibIdx];
@@ -652,9 +652,9 @@ export function createHomeShip(): HomeShip {
       (p, n, i) => (i < midIdx ? [...p, n] : p),
       [] as Path
     );
-    console.log("fore and aft:");
-    console.dir(boundFore);
-    console.dir(boundAft);
+    // console.log("fore and aft:");
+    // console.dir(boundFore);
+    // console.dir(boundAft);
     const floorBoardWidth = 1.2;
     const floorBoardGap = 0.05;
     // console.log(`ribSpace: ${ribSpace}`);
@@ -665,7 +665,7 @@ export function createHomeShip(): HomeShip {
       const z = i * floorBoardWidth + floorBoardWidth * 0.5;
       const fore = V(0, floorHeight, z);
       const foreSnap = snapToPath(boundFore, fore[2], 2, __t1);
-      console.log(`foreSnap: ${vec3Dbg(foreSnap)}`);
+      // console.log(`foreSnap: ${vec3Dbg(foreSnap)}`);
       fore[0] = foreSnap[0] - 1.0;
       const aft = V(0, floorHeight, z);
       const aftSnap = snapToPath(boundAft, aft[2], 2, __t1);
