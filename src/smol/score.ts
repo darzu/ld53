@@ -51,6 +51,7 @@ EM.registerSystem(
     if (!res.score.endZone()) return;
     if (res.score.gameEnding) {
       if (res.time.step > res.score.gameEndedAt + 300) {
+        console.log("resetting after game end");
         res.score.gameEnding = false;
         if (res.score.victory) {
           res.score.levelNumber = 0;
@@ -70,7 +71,7 @@ EM.registerSystem(
         res.score.levelEnding = false;
         res.score.completedLevels++;
         res.score.levelNumber++;
-        setMap(EM, MapPaths[res.score.levelNumber]);
+        await setMap(EM, MapPaths[res.score.levelNumber]);
         //res.score.shipHealth = 10000;
         for (let f of res.score.onLevelEnd) {
           await f();
@@ -78,6 +79,7 @@ EM.registerSystem(
       }
     } else if (ship.shipHealth.health <= 0) {
       // END GAME
+      console.log("ending game");
       res.score.gameEnding = true;
       res.score.gameEndedAt = res.time.step;
       res.text.upperText = "LEVEL FAILED";

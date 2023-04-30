@@ -244,6 +244,22 @@ export function parseAndMutateIntoMapData(
     .filter((b) => b.color[0] > 200 && b.color[1] > 200 && b.color[2] < 100)
     .map((b) => centerOfMassAndDirection(b));
 
+  const towerIslandRadius = 50;
+  towers.forEach(([pos, _]) => {
+    for (let i = -towerIslandRadius; i < towerIslandRadius; i++) {
+      for (let j = -towerIslandRadius; j < towerIslandRadius; j++) {
+        if (i * i + j * j > towerIslandRadius * towerIslandRadius) continue;
+        const x = pos[0] + i;
+        const y = pos[1] + j;
+        // check to see if we're actually within an approximate circle
+        const outIdx = x + (mapBytes.height - 1 - y) * mapBytes.width;
+        if (0 <= outIdx && outIdx < landData.length) {
+          landData[outIdx] = 1.0;
+        }
+      }
+    }
+  });
+
   const windBlobs = blobs.filter(
     (b) => b.color[0] > 200 && b.color[1] < 150 && b.color[2] > 200
   );
