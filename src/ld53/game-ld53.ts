@@ -76,7 +76,7 @@ import { setWindAngle, WindDef } from "../smol/wind.js";
 import { createShip, ShipDef } from "../smol/ship.js";
 import { SAIL_FURL_RATE } from "../smol/sail.js";
 import { spawnStoneTower } from "./stone.js";
-
+import { LandDef } from "./land-ship.js";
 /*
 NOTES:
 - Cut grass by updating a texture that has cut/not cut or maybe cut-height
@@ -92,7 +92,7 @@ PERF:
 [ ] reduce triangles on ocean
 */
 
-const DBG_PLAYER = true;
+const DBG_PLAYER = false;
 const SHIP_START_POS = V(100, 0, -100);
 
 // world map is centered around 0,0
@@ -246,6 +246,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     // console.log("o: " + vec3Dbg(p));
     // if (i > 10) throw "stop";
   });
+  EM.addResource(LandDef, sampleTerra);
   // console.log(`heightmap minY: ${minY}`);
   const hm = em.new();
   em.ensureComponentOn(hm, RenderableConstructDef, terraMesh);
@@ -530,6 +531,8 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   }
 
   EM.requireSystem("stoneTowerAttack");
+
+  EM.requireSystem("landShipCollision");
 }
 
 async function createPlayer() {

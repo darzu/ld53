@@ -108,14 +108,14 @@ function shrinkBrickAtIndex(
       (index) => !pointInAABB(aabb, tower.mesh.pos[baseIndex + index])
     )
   ) {
-    console.log(`right face out of AABB at index ${baseIndex}`);
+    //console.log(`right face out of AABB at index ${baseIndex}`);
     face = rightFace;
   } else if (
     leftFace.every(
       (index) => !pointInAABB(aabb, tower.mesh.pos[baseIndex + index])
     )
   ) {
-    console.log(`left face out of AABB at index ${baseIndex}`);
+    //console.log(`left face out of AABB at index ${baseIndex}`);
     face = leftFace;
   }
   if (!face) {
@@ -148,14 +148,14 @@ function shrinkBrickAtIndex(
           )
         )
       ) {
-        console.log(`unshrinkable point at ${baseIndex} + ${attractedIndex}`);
+        //console.log(`unshrinkable point at ${baseIndex} + ${attractedIndex}`);
         // can't shrink this point enough, giving up
         return false;
       }
       // we can shrink along this axis!
       // iterate for 10 rounds
       for (let i = 0; i < 10; i++) {
-        console.log(`iteration ${i}, min=${min}, max=${max}`);
+        //console.log(`iteration ${i}, min=${min}, max=${max}`);
         const half = (min + max) / 2;
         if (
           pointInAABB(
@@ -172,7 +172,7 @@ function shrinkBrickAtIndex(
           max = half;
         }
       }
-      console.log(`done with iterations, max is ${max}`);
+      //console.log(`done with iterations, max is ${max}`);
       vec3.add(attracted, vec3.scale(towardsAttractor, max), attracted);
     }
   }

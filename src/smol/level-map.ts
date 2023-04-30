@@ -211,18 +211,18 @@ export function parseAndMutateIntoMapData(
   const landData = new Float32Array(mapBytes.width * mapBytes.height);
   let totalPurple = 0;
 
-  // extract land data
-  // for (let blob of blobs) {
-  //   if (blob.color[0] > 200) {
-  //     for (let r of blob.runs) {
-  //       for (let x = r.x0; x < r.x1; x++) {
-  //         // TODO(@darzu): parameterize this transform?
-  //         const outIdx = x + (mapBytes.height - 1 - r.y) * mapBytes.width;
-  //         landData[outIdx] = 1.0;
-  //       }
-  //     }
-  //   }
-  // }
+  //extract land data
+  for (let blob of blobs) {
+    if (blob.color[0] < 50 && blob.color[1] < 50 && blob.color[2] < 50) {
+      for (let r of blob.runs) {
+        for (let x = r.x0; x < r.x1; x++) {
+          // TODO(@darzu): parameterize this transform?
+          const outIdx = x + (mapBytes.height - 1 - r.y) * mapBytes.width;
+          landData[outIdx] = 1.0;
+        }
+      }
+    }
+  }
 
   for (let blob of blobs) {
     console.log(`Blob with color ${blob.color}`);
