@@ -459,37 +459,6 @@ export async function initRogueGame(em: EntityManager, hosting: boolean) {
   );
   EM.requireGameplaySystem("ld51PlayerFireCannon");
 
-  const splinterObjId = 7654;
-  em.registerSystem(
-    [
-      SplinterParticleDef,
-      LinearVelocityDef,
-      AngularVelocityDef,
-      GravityDef,
-      PositionDef,
-      RotationDef,
-      RenderDataStdDef,
-    ],
-    [],
-    (splinters, res) => {
-      for (let s of splinters) {
-        if (s.position[1] <= 0) {
-          // TODO(@darzu): zero these instead of remove?
-          em.removeComponent(s.id, LinearVelocityDef);
-          em.removeComponent(s.id, GravityDef);
-          em.removeComponent(s.id, AngularVelocityDef);
-
-          s.position[1] = 0;
-          quat.identity(s.rotation);
-          quat.rotateX(s.rotation, Math.PI * 0.5, s.rotation);
-          quat.rotateZ(s.rotation, Math.PI * Math.random(), s.rotation);
-          s.renderDataStd.id = splinterObjId; // stops z-fighting
-          // console.log("freeze!");
-        }
-      }
-    },
-    "splintersOnFloor"
-  );
   EM.requireGameplaySystem("splintersOnFloor");
 
   // const quadIdsNeedReset = new Set<number>();

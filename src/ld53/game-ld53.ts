@@ -625,6 +625,8 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     "deadBullets"
   );
   EM.requireGameplaySystem("deadBullets");
+
+  EM.requireGameplaySystem("splintersOnFloor");
 }
 
 async function createPlayer() {

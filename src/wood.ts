@@ -347,6 +347,8 @@ onInit((em: EntityManager) => {
               // create flying splinter (from pool)
               {
                 const splinter = pool.getNext();
+                if (RenderableDef.isOn(splinter))
+                  splinter.renderable.hidden = false;
                 vec3.copy(splinter.color, w.color);
                 const pos = getLineMid(vec3.create(), seg.midLine);
                 vec3.transformMat4(pos, w.world.transform, pos);
