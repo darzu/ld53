@@ -72,7 +72,7 @@ import { createGraph3D } from "../utils-gizmos.js";
 import { ScoreDef } from "../smol/score.js";
 import { LandMapTexPtr, LevelMapDef, setMap } from "../smol/level-map.js";
 import { GrassCutTexPtr, grassPoolPtr } from "../smol/std-grass.js";
-import { WindDef } from "../smol/wind.js";
+import { setWindAngle, WindDef } from "../smol/wind.js";
 import { createShip, ShipDef } from "../smol/ship.js";
 import { SAIL_FURL_RATE } from "../smol/sail.js";
 import { spawnStoneTower } from "./stone.js";
@@ -297,18 +297,23 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   initOcean(oceanMesh, ENDESGA16.blue);
   await em.whenResources(OceanDef); // TODO(@darzu): need to wait?
 
-  em.addResource(WindDef);
-  em.requireSystem("changeWind");
-  em.requireSystem("smoothWind");
+  const wind = em.addResource(WindDef);
+  //em.requireSystem("changeWind");
+  //em.requireSystem("smoothWind");
 
   // load level
   const level = await EM.whenResources(LevelMapDef);
+  setWindAngle(
+    wind,
+    Math.atan2(-level.levelMap.windDir[0], -level.levelMap.windDir[1]) +
+      Math.PI / 2
+  );
 
   const ship = await createShip(em);
   // move down
   // ship.position[2] = -WORLD_SIZE * 0.5 * 0.6;
   level2DtoWorld3D(level.levelMap.startPos, 15, ship.position);
-  vec3.copy(ship.position, SHIP_START_POS);
+  //vec3.copy(ship.position, SHIP_START_POS);
   em.requireSystem("sailShip");
   em.requireSystem("shipParty");
 

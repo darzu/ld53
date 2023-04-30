@@ -30,6 +30,7 @@ export const LevelMapDef = EM.defineComponent("levelMap", () => ({
   land: new Float32Array(),
   towers: [] as [vec2, vec2][],
   startPos: V(0, 0),
+  windDir: V(0, 0),
 }));
 type LevelMap = Component<typeof LevelMapDef>;
 
@@ -223,6 +224,10 @@ export function parseAndMutateIntoMapData(
   //   }
   // }
 
+  for (let blob of blobs) {
+    console.log(`Blob with color ${blob.color}`);
+  }
+
   // extract start pos
   const startBlob = blobs.filter(
     (b) => b.color[0] < 100 && b.color[1] < 100 && b.color[2] > 200
@@ -235,11 +240,22 @@ export function parseAndMutateIntoMapData(
     .filter((b) => b.color[0] > 200 && b.color[1] > 200 && b.color[2] < 100)
     .map((b) => centerOfMassAndDirection(b));
 
+  const windBlobs = blobs.filter(
+    (b) => b.color[0] > 200 && b.color[1] < 150 && b.color[2] > 200
+  );
+  assert(
+    windBlobs.length === 1,
+    `expected 1 windBlob, found ${windBlobs.length}`
+  );
+  const windBlob = windBlobs[0];
+  const [_, windDir] = centerOfMassAndDirection(windBlob);
+
   const levelMap: LevelMap = {
     land: landData,
     name,
     startPos,
     towers,
+    windDir,
   };
 
   // TODO(@darzu): DBG:
