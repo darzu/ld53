@@ -97,8 +97,8 @@ EM.registerSystem(
     for (let i = 0; i < corners.length; i++) {
       const corner = corners[i];
       const neighbor = corners[(i + 1) % 4];
-      for (let s = 0; s <= SAMPLES_PER_EDGE; s++) {
-        const r = s / SAMPLES_PER_EDGE;
+      for (let s = 1; s <= SAMPLES_PER_EDGE; s++) {
+        const r = s / (SAMPLES_PER_EDGE + 1);
         const point = vec2.add(
           vec2.scale(corner, r, scaledTemp1),
           vec2.scale(neighbor, 1 - r, scaledTemp2),
