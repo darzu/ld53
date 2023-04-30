@@ -300,6 +300,7 @@ export async function setMap(em: EntityManager, name: MapName) {
     mapCache.set(name, levelMap);
   }
 
+  // TODO(@darzu): FIX LAND SPAWN
   const texResource = res.renderer.renderer.getCyResource(LandMapTexPtr)!;
   texResource.queueUpdate(levelMap.land);
 

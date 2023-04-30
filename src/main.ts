@@ -233,7 +233,8 @@ function legacyRequireAllTheSystems() {
   EM.requireSystem("retargetCamera");
   EM.requireSystem("renderView");
   EM.requireSystem("constructRenderables");
-  if (DBG_ASSERT) EM.requireSystem("deadCleanupWarning"); // SHOULD BE LAST(-ish); warns if cleanup is missing
+  // TODO(@darzu): we want to make it easier to satisfy this
+  if (VERBOSE_LOG) EM.requireSystem("deadCleanupWarning"); // SHOULD BE LAST(-ish); warns if cleanup is missing
 }
 
 function callFixedTimestepSystems() {

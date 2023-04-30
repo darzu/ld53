@@ -38,12 +38,9 @@ import { vec3Dbg } from "../utils-3d.js";
 const SAMPLES_PER_EDGE = 5;
 const NUDGE_DIST = 1.0;
 
-export const LandDef = EM.defineComponent(
-  "land",
-  (sample: (x: number, y: number) => number) => ({
-    sample,
-  })
-);
+export const LandDef = EM.defineComponent("land", () => ({
+  sample: (x: number, y: number) => 0 as number,
+}));
 
 const zBasis = vec2.create();
 const xBasis = vec2.create();

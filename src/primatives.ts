@@ -282,73 +282,103 @@ function createGridPlane(width: number, height: number): RawMesh {
 
 export const DBG_FABRIC = createFlatQuadMesh(5, 5);
 
+export function resetFlatQuadMesh(
+  width: number,
+  height: number,
+  mesh: Mesh,
+  doubleSided = false
+) {
+  assert(width > 1 && height > 1);
+  assert(mesh.uvs);
+  assert(mesh.pos.length === height * width);
+  assert(mesh.quad.length === height * width * (doubleSided ? 2 : 1));
+  assert(mesh.normals!.length === mesh.pos.length);
+  assert(mesh.tangents!.length === mesh.pos.length);
+
+  // create each vert
+  // NOTE: z:width, x:height
+  {
+    let i = 0;
+    for (let x = 0; x < height; x++) {
+      for (let z = 0; z < width; z++) {
+        vec3.set(x, 0, z, mesh.pos[i]);
+        // NOTE: world_z:tex_x, world_x:tex_y
+        vec2.set(z / width, x / height, mesh.uvs![i]);
+        i++;
+      }
+    }
+  }
+
+  // create each quad
+  {
+    let i = 0;
+    for (let x = 0; x < height - 1; x++) {
+      for (let z = 0; z < width - 1; z++) {
+        vec4.set(
+          idx(x, z + 1), //
+          idx(x + 1, z + 1),
+          idx(x + 1, z),
+          idx(x, z),
+          mesh.quad[i]
+        );
+        i++;
+
+        if (doubleSided) {
+          vec4.set(
+            idx(x, z), //
+            idx(x + 1, z),
+            idx(x + 1, z + 1),
+            idx(x, z + 1),
+            mesh.quad[i]
+          );
+          i++;
+        }
+        // quad.push(vec4.clone([q[3], q[2], q[1], q[0]]));
+      }
+    }
+  }
+
+  // TODO(@darzu): PERF. this is soo much wasted memory
+  mesh.normals!.forEach((n) => vec3.set(0, 1, 0, n));
+  mesh.tangents!.forEach((n) => vec3.set(-1, 0, 0, n));
+
+  function idx(x: number, z: number): number {
+    return z + x * width;
+  }
+  // TODO(@darzu): return
+}
+
 export function createFlatQuadMesh(
   width: number,
   height: number,
   doubleSided = false
 ): Mesh {
   assert(width > 1 && height > 1);
-  const pos: vec3[] = [];
-  const quad: vec4[] = [];
-  const uvs: vec2[] = [];
 
-  // create each vert
-  // NOTE: z:width, x:height
-  for (let x = 0; x < height; x++) {
-    for (let z = 0; z < width; z++) {
-      pos.push(V(x, 0, z));
-      // NOTE: world_z:tex_x, world_x:tex_y
-      uvs.push(V(z / width, x / height));
-    }
-  }
-
-  // create each quad
-  for (let x = 0; x < height - 1; x++) {
-    for (let z = 0; z < width - 1; z++) {
-      quad.push(
-        V(
-          idx(x, z + 1), //
-          idx(x + 1, z + 1),
-          idx(x + 1, z),
-          idx(x, z)
-        )
-      );
-      if (doubleSided) {
-        quad.push(
-          V(
-            idx(x, z), //
-            idx(x + 1, z),
-            idx(x + 1, z + 1),
-            idx(x, z + 1)
-          )
-        );
-      }
-      // quad.push(vec4.clone([q[3], q[2], q[1], q[0]]));
-    }
-  }
-
-  // TODO(@darzu): PERF. this is soo much wasted memory
-  const normals = pos.map((_) => V(0, 1, 0));
-  const tangents = pos.map((_) => V(-1, 0, 0)); // TODO(@darzu): what should tangent be? should it be optional?
-
-  return {
-    pos,
+  const quadNum = height * width * (doubleSided ? 2 : 1);
+  const mesh: Mesh = {
+    pos: range(width * height).map((_) => vec3.create()),
+    uvs: range(width * height).map((_) => vec2.create()),
+    quad: range(quadNum).map((_) => vec4.create()),
     tri: [],
-    uvs,
-    quad,
-    normals,
-    tangents,
-    // colors: quad.map((_, i) => V(i / quad.length, 0.2, 0.2)),
-    colors: quad.map((_, i) => V(0, 0, 0)),
+    normals: range(width * height).map((_) => vec3.create()),
+    tangents: range(width * height).map((_) => vec3.create()),
+    colors: range(quadNum).map((_) => V(0, 0, 0)),
     dbgName: `fabric-${width}x${height}`,
-    surfaceIds: quad.map((_, i) => i + 1),
+    surfaceIds: range(quadNum).map((_, i) => i + 1),
     usesProvoking: true,
   };
 
-  function idx(x: number, z: number): number {
-    return z + x * width;
-  }
-  // TODO(@darzu): return
+  assert(width > 1 && height > 1);
+  assert(mesh.uvs);
+  assert(mesh.pos.length === height * width);
+  assert(mesh.quad.length === height * width * (doubleSided ? 2 : 1));
+  assert(mesh.normals!.length === mesh.pos.length);
+  assert(mesh.tangents!.length === mesh.pos.length);
+
+  resetFlatQuadMesh(width, height, mesh, doubleSided);
+
+  return mesh;
 }
 
 // TODO(@darzu): there should be hooks so we can define these nearer to

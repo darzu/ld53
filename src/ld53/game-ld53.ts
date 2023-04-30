@@ -73,7 +73,11 @@ import { initOcean, OceanDef } from "../games/hyperspace/ocean.js";
 import { renderOceanPipe } from "../render/pipelines/std-ocean.js";
 import { SKY_MASK } from "../render/pipeline-masks.js";
 import { skyPipeline } from "../render/pipelines/std-sky.js";
-import { createFlatQuadMesh, makeDome } from "../primatives.js";
+import {
+  createFlatQuadMesh,
+  makeDome,
+  resetFlatQuadMesh,
+} from "../primatives.js";
 import { deferredPipeline } from "../render/pipelines/std-deferred.js";
 import { startTowers } from "../games/tower.js";
 import { createGraph3DAxesMesh, createGraph3DDataMesh } from "../gizmos.js";
@@ -217,65 +221,11 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   const score = em.addResource(ScoreDef);
   em.requireSystem("updateScoreDisplay");
   em.requireSystem("detectGameEnd");
+
   // start map
   await setMap(em, "tutorial1");
 
-  // once the map is loaded, we can run JFA
-  res.renderer.renderer.submitPipelines([], [...mapJfa.allPipes()]);
-
-  // TODO(@darzu): simplify this pattern
-  const terraTex = await res.renderer.renderer.readTexture(mapJfa.sdfTex);
-  const terraReader = createTextureReader(
-    terraTex,
-    mapJfa.sdfTex.size,
-    1,
-    mapJfa.sdfTex.format
-  );
-  function sampleTerra(worldX: number, worldZ: number) {
-    let xi = ((worldZ + WORLD_WIDTH * 0.5) / WORLD_WIDTH) * terraReader.size[0];
-    let yi =
-      ((worldX + WORLD_HEIGHT * 0.5) / WORLD_HEIGHT) * terraReader.size[1];
-    // xi = clamp(xi, 0, terraReader.size[0]);
-    // yi = clamp(yi, 0, terraReader.size[1]);
-    const height = terraReader.sample(xi, yi) / 256;
-    // console.log(`xi: ${xi}, yi: ${yi} => ${height}`);
-    return height;
-  }
-
-  // height map
-  const terraVertsPerWorldUnit = 0.25;
-  const worldUnitPerTerraVerts = 1 / terraVertsPerWorldUnit;
-  const terraZCount = Math.floor(WORLD_WIDTH * terraVertsPerWorldUnit);
-  const terraXCount = Math.floor(WORLD_HEIGHT * terraVertsPerWorldUnit);
-  const terraMesh = createFlatQuadMesh(terraZCount, terraXCount);
-  // let minY = Infinity;
-  terraMesh.pos.forEach((p, i) => {
-    // console.log("i: " + vec3Dbg(p));
-    const x = p[0] * worldUnitPerTerraVerts - WORLD_HEIGHT * 0.5;
-    const z = p[2] * worldUnitPerTerraVerts - WORLD_WIDTH * 0.5;
-    let y = sampleTerra(x, z) * 100.0;
-    // minY = Math.min(minY, y);
-
-    // TODO(@darzu): wierd hack for shorline:
-    if (y <= 1.0) y = -30;
-
-    y += Math.random() * 2.0; // TODO(@darzu): jitter for less uniform look?
-
-    p[0] = x;
-    p[1] = y;
-    p[2] = z;
-    // console.log("o: " + vec3Dbg(p));
-    // if (i > 10) throw "stop";
-  });
-  EM.addResource(LandDef, sampleTerra);
-  // console.log(`heightmap minY: ${minY}`);
-  const hm = em.new();
-  em.ensureComponentOn(hm, RenderableConstructDef, terraMesh);
-  em.ensureComponentOn(hm, PositionDef);
-  // TODO(@darzu): maybe do a sable-like gradient accross the terrain, based on view dist or just uv?
-  // em.ensureComponentOn(hm, ColorDef, V(0.4, 0.2, 0.2));
-  em.ensureComponentOn(hm, ColorDef, ENDESGA16.lightGray);
-  // TODO(@darzu): update terra from SDF
+  resetLand();
 
   // sky dome?
   const SKY_HALFSIZE = 1000;
@@ -452,6 +402,8 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   }
 
   score.onLevelEnd.push(async () => {
+    resetLand();
+
     // worldCutData.fill(0.0);
     // grassCutTex.queueUpdate(worldCutData);
     // vec3.set(0, 0, 0, ship.position);
@@ -641,6 +593,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     "breakBullets"
   );
   EM.requireGameplaySystem("breakBullets");
+
   // dead bullet maintenance
   // NOTE: this must be called after any system that can create dead bullets but
   //   before the rendering systems.
@@ -710,4 +663,85 @@ async function createPlayer() {
   EM.ensureComponentOn(p, AuthorityDef, me.pid);
   EM.ensureComponentOn(p, PhysicsParentDef);
   return p;
+}
+
+const terraVertsPerWorldUnit = 0.25;
+const worldUnitPerTerraVerts = 1 / terraVertsPerWorldUnit;
+const terraZCount = Math.floor(WORLD_WIDTH * terraVertsPerWorldUnit);
+const terraXCount = Math.floor(WORLD_HEIGHT * terraVertsPerWorldUnit);
+let terraMesh: Mesh | undefined = undefined;
+let terraEnt: EntityW<[typeof RenderableDef]> | undefined = undefined;
+async function resetLand() {
+  const res = await EM.whenResources(RendererDef);
+
+  // TODO(@darzu): IMPL
+  // once the map is loaded, we can run JFA
+  res.renderer.renderer.submitPipelines([], [...mapJfa.allPipes()]);
+
+  // TODO(@darzu): simplify this pattern
+  const terraTex = await res.renderer.renderer.readTexture(mapJfa.sdfTex);
+  const terraReader = createTextureReader(
+    terraTex,
+    mapJfa.sdfTex.size,
+    1,
+    mapJfa.sdfTex.format
+  );
+  function sampleTerra(worldX: number, worldZ: number) {
+    let xi = ((worldZ + WORLD_WIDTH * 0.5) / WORLD_WIDTH) * terraReader.size[0];
+    let yi =
+      ((worldX + WORLD_HEIGHT * 0.5) / WORLD_HEIGHT) * terraReader.size[1];
+    // xi = clamp(xi, 0, terraReader.size[0]);
+    // yi = clamp(yi, 0, terraReader.size[1]);
+    const height = terraReader.sample(xi, yi) / 256;
+    // console.log(`xi: ${xi}, yi: ${yi} => ${height}`);
+    return height;
+  }
+
+  // height map
+  if (!terraMesh) {
+    terraMesh = createFlatQuadMesh(terraZCount, terraXCount);
+
+    // console.log(`heightmap minY: ${minY}`);
+    const hm = EM.new();
+    EM.ensureComponentOn(hm, RenderableConstructDef, terraMesh);
+    EM.ensureComponentOn(hm, PositionDef);
+    // TODO(@darzu): maybe do a sable-like gradient accross the terrain, based on view dist or just uv?
+    // EM.ensureComponentOn(hm, ColorDef, V(0.4, 0.2, 0.2));
+    EM.ensureComponentOn(hm, ColorDef, ENDESGA16.lightGray);
+    const hm2 = await EM.whenEntityHas(hm, RenderableDef);
+    terraEnt = hm2;
+  } else {
+    resetFlatQuadMesh(terraZCount, terraXCount, terraMesh);
+  }
+
+  // let minY = Infinity;
+  terraMesh.pos.forEach((p, i) => {
+    // console.log("i: " + vec3Dbg(p));
+    // vec3.zero(p);
+    // TODO(@darzu): very weird to read from mesh x/z here
+    const x = p[0] * worldUnitPerTerraVerts - WORLD_HEIGHT * 0.5;
+    const z = p[2] * worldUnitPerTerraVerts - WORLD_WIDTH * 0.5;
+    let y = sampleTerra(x, z) * 100.0;
+    // minY = Math.min(minY, y);
+
+    // TODO(@darzu): wierd hack for shorline:
+    if (y <= 1.0) y = -30;
+
+    y += Math.random() * 2.0; // TODO(@darzu): jitter for less uniform look?
+
+    p[0] = x;
+    p[1] = y;
+    p[2] = z;
+    // console.log("o: " + vec3Dbg(p));
+    // if (i > 10) throw "stop";
+  });
+
+  // submit verts to GPU
+  res.renderer.renderer.stdPool.updateMeshVertices(
+    terraEnt!.renderable.meshHandle,
+    terraMesh
+  );
+
+  const landRes = EM.ensureResource(LandDef);
+  landRes.sample = sampleTerra;
 }
