@@ -48,6 +48,8 @@ interface MapBlob {
   runs: MapBlobRun[];
 }
 
+const mapCache = new Map<string, LevelMap>();
+
 function centerOfMassAndDirection(b: MapBlob): [vec2, vec2] {
   let cx = 0;
   let cy = 0;
@@ -286,11 +288,16 @@ export async function setMap(em: EntityManager, name: MapName) {
 
   let __start = performance.now();
 
-  const mapBytes = res.mapBytesSet[name];
-
+  let levelMap;
   let totalPurple = 0;
+  if (mapCache.has(name)) {
+    levelMap = mapCache.get(name)!;
+  } else {
+    const mapBytes = res.mapBytesSet[name];
 
-  const levelMap = parseAndMutateIntoMapData(mapBytes, name);
+    levelMap = parseAndMutateIntoMapData(mapBytes, name);
+    mapCache.set(name, levelMap);
+  }
 
   const texResource = res.renderer.renderer.getCyResource(LandMapTexPtr)!;
   texResource.queueUpdate(levelMap.land);

@@ -27,7 +27,12 @@ import {
   ScaleDef,
 } from "../physics/transform.js";
 import { PointLightDef } from "../render/lights.js";
-import { cloneMesh, mapMeshPositions, transformMesh } from "../render/mesh.js";
+import {
+  cloneMesh,
+  mapMeshPositions,
+  Mesh,
+  transformMesh,
+} from "../render/mesh.js";
 import { stdRenderPipeline } from "../render/pipelines/std-mesh.js";
 import { outlineRender } from "../render/pipelines/std-outline.js";
 import { postProcess } from "../render/pipelines/std-post.js";
@@ -87,6 +92,12 @@ import { ParametricDef } from "../games/parametric-motion.js";
 import { createDock } from "./dock.js";
 import { ShipHealthDef } from "./ship-health.js";
 import { createRef } from "../em_helpers.js";
+import {
+  resetWoodHealth,
+  resetWoodState,
+  WoodAssetsDef,
+  WoodStateDef,
+} from "../wood.js";
 /*
 NOTES:
 - Cut grass by updating a texture that has cut/not cut or maybe cut-height
@@ -457,6 +468,17 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
       wind,
       Math.atan2(-level.levelMap.windDir[0], -level.levelMap.windDir[1]) +
         Math.PI / 2
+    );
+
+    resetWoodHealth(ship.woodHealth);
+    resetWoodState(ship.woodState);
+    em.whenEntityHas(ship, RenderableDef, WoodStateDef).then((ship) =>
+      res.renderer.renderer.stdPool.updateMeshQuads(
+        ship.renderable.meshHandle,
+        ship.woodState.mesh as Mesh,
+        0,
+        ship.woodState.mesh.quad.length
+      )
     );
   });
 
