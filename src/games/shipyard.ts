@@ -318,7 +318,8 @@ export function createHomeShip(): HomeShip {
   const prow = V(keelAABB.max[0] + prowOverhang, railHeight, 0);
   const sternOverhang = 1;
   const sternpost = V(keelAABB.min[0] - sternOverhang, railHeight, 0);
-  const transomWidth = 12;
+  // const transomWidth = 12;
+  const transomWidth = 6;
   const railLength = keelLength + prowOverhang + sternOverhang;
 
   const ribSpace = railLength / (ribCount + 1);
@@ -326,7 +327,8 @@ export function createHomeShip(): HomeShip {
 
   let railCurve: BezierCubic;
   {
-    const sternAngle = (1 * Math.PI) / 16;
+    // const sternAngle = (1 * Math.PI) / 16;
+    const sternAngle = (3 * Math.PI) / 16;
     const sternInfluence = 24;
     const prowAngle = (4 * Math.PI) / 16;
     const prowInfluence = 12;
@@ -407,14 +409,14 @@ export function createHomeShip(): HomeShip {
     fixPathBasis(bPath, [0, 1, 0], [0, 0, 1], [1, 0, 0]);
     ribPaths.push(bPath);
 
-    if (i === 0) {
-      console.log("RIB BEZIER PATH");
-      // console.log(outboard);
-      console.dir(ribCurve);
-      console.dir(bPath);
-      dbgPathWithGizmos(bPath);
-      dbgPathWithGizmos(mirrorPath(clonePath(bPath), V(0, 0, 1)));
-    }
+    // if (i === 0) {
+    //   console.log("RIB BEZIER PATH");
+    //   // console.log(outboard);
+    //   console.dir(ribCurve);
+    //   console.dir(bPath);
+    //   dbgPathWithGizmos(bPath);
+    //   dbgPathWithGizmos(mirrorPath(clonePath(bPath), V(0, 0, 1)));
+    // }
     // if (i === 1) dbgPathWithGizmos(weirdP);
 
     appendBoard(builder.mesh, {
@@ -442,19 +444,20 @@ export function createHomeShip(): HomeShip {
     // railPath[railIdx].pos[2] = ribStarts[i][2];
   }
   // rail board:
+  const mirrorRailPath = mirrorPath(clonePath(railPath), V(0, 0, 1));
   appendBoard(builder.mesh, {
     path: railPath,
     width: ribWidth,
     depth: ribDepth,
   });
   appendBoard(builder.mesh, {
-    path: mirrorPath(clonePath(railPath), V(0, 0, 1)),
+    path: mirrorRailPath,
     width: ribWidth,
     depth: ribDepth,
   });
 
-  translatePath(railPath, [0, 0, 8]);
-  dbgPathWithGizmos(railPath);
+  // translatePath(railPath, [0, 0, 8]);
+  // dbgPathWithGizmos(railPath);
 
   // PLANK PARAMS
   // const plankCount = 20;
@@ -514,6 +517,7 @@ export function createHomeShip(): HomeShip {
     const nodes: Path = evenRibs
       .filter((rib) => rib.length > i)
       .map((rib) => rib[i]);
+    if (nodes.length < 2) continue;
 
     // one extra board to connect to the keel up front
     if (i < 20) {
@@ -538,7 +542,7 @@ export function createHomeShip(): HomeShip {
       };
       const diff = vec3.sub(second.pos, third.pos, first.pos);
       const scale = (transomPlankNum - 1 - i) / (transomPlankNum - 1) + 0.4;
-      console.log("scale: " + scale);
+      // console.log("scale: " + scale);
       vec3.scale(diff, scale, diff);
       vec3.add(second.pos, diff, first.pos);
       nodes.unshift(first);
@@ -592,6 +596,27 @@ export function createHomeShip(): HomeShip {
       path: path,
       width: plankWidth,
       depth: plankDepth,
+    });
+  }
+  // REAR RAIL
+  {
+    const start = railPath[0];
+    const end = mirrorRailPath[0];
+    const midPos = vec3.lerp(start.pos, end.pos, 0.5, vec3.create());
+    vec3.lerp(midPos, start.pos, 1.2, start.pos);
+    vec3.lerp(midPos, end.pos, 1.2, end.pos);
+    const mid: PathNode = {
+      pos: midPos,
+      rot: quat.clone(start.rot),
+    };
+    const path: Path = [start, end];
+    for (let n of path) {
+      quat.fromEuler(-Math.PI / 2, 0, Math.PI / 2, n.rot);
+    }
+    appendBoard(builder.mesh, {
+      path: path,
+      width: ribWidth,
+      depth: ribDepth,
     });
   }
 
