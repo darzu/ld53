@@ -125,7 +125,7 @@ PERF:
 [ ] reduce triangles on ocean
 */
 
-const DBG_PLAYER = true;
+const DBG_PLAYER = false;
 // const SHIP_START_POS = V(100, 0, -100);
 
 // world map is centered around 0,0
@@ -322,7 +322,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   em.requireSystem("shipParty");
 
   // bouyancy
-  {
+  if (!"true") {
     const bouyDef = EM.defineComponent("bouy", () => true);
     const buoys: EntityW<[typeof PositionDef]>[] = [];
     for (let u = 0.4; u <= 0.6; u += 0.02) {

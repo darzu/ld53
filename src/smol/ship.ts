@@ -264,7 +264,7 @@ async function createRudder(em: EntityManager) {
     Math.PI,
     // -Math.PI / 8,
     -Math.PI / 12,
-    1.5,
+    1.6,
     // V(0, 20, 50),
     V(0, 10, 30),
     true
