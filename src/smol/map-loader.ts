@@ -16,12 +16,12 @@ const DEFAULT_MAP_PATH = "assets/ld53_maps/";
 //   "map_narrow",
 // ] as const;
 export const MapPaths = [
+  "tutorial-attack-the-towers",
   "tutorial-dock-under-cannon",
   "dont-go-right",
   "thread-needle",
   "every-which-way",
-  "rangetest",
-  "tutorial2",
+  // "rangetest",
 ] as const;
 
 export type MapName = (typeof MapPaths)[number];
