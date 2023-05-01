@@ -69,7 +69,7 @@ import { CanvasDef } from "../canvas.js";
 import { createJfaPipelines } from "../render/pipelines/std-jump-flood.js";
 import { createGridComposePipelines } from "../render/pipelines/std-compose.js";
 import { createTextureReader } from "../render/cpu-texture.js";
-import { initOcean, OceanDef } from "../games/hyperspace/ocean.js";
+import { initOcean, OceanDef, UVPosDef } from "../games/hyperspace/ocean.js";
 import { renderOceanPipe } from "../render/pipelines/std-ocean.js";
 import { SKY_MASK } from "../render/pipeline-masks.js";
 import { skyPipeline } from "../render/pipelines/std-sky.js";
@@ -118,7 +118,7 @@ PERF:
 [ ] reduce triangles on ocean
 */
 
-const DBG_PLAYER = false;
+const DBG_PLAYER = true;
 // const SHIP_START_POS = V(100, 0, -100);
 
 // world map is centered around 0,0
@@ -270,7 +270,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   // TODO(@darzu): I don't think the PBR-ness of this color is right
   // initOcean(oceanMesh, V(0.1, 0.3, 0.8));
   initOcean(oceanMesh, ENDESGA16.blue);
-  await em.whenResources(OceanDef); // TODO(@darzu): need to wait?
+  const ocean = await em.whenResources(OceanDef); // TODO(@darzu): need to wait?
 
   const wind = em.addResource(WindDef);
   //em.requireSystem("changeWind");
@@ -299,32 +299,61 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   em.requireSystem("shipParty");
 
   // bouyancy
-  // const bouy = em.new();
-  // em.ensureComponentOn(bouy, PositionDef);
-  // em.ensureComponentOn(bouy, ScaleDef, V(5, 5, 5));
-  // em.ensureComponentOn(bouy, RenderableConstructDef, res.assets.ball.proto);
-  // em.ensureComponentOn(bouy, ColorDef, ENDESGA16.lightGreen);
-  // em.registerSystem(
-  //   [ShipDef],
-  //   [OceanDef],
-  //   (ships, res) => {
-  //     // TODO(@darzu): unify with UV ship stuff?
-  //     if (!ships.length) return;
-  //     const [ship] = ships;
-  //     const { ocean } = res;
+  {
+    const bouyDef = EM.defineComponent("bouy", () => true);
+    const buoys: EntityW<[typeof PositionDef]>[] = [];
+    for (let u = 0.4; u <= 0.6; u += 0.02) {
+      for (let v = 0.4; v <= 0.6; v += 0.02) {
+        const bouy = em.new();
+        em.ensureComponentOn(bouy, PositionDef, V(0, 0, 0));
+        em.ensureComponentOn(
+          bouy,
+          UVPosDef,
+          V(u + jitter(0.01), v + jitter(0.01))
+        );
+        // em.ensureComponentOn(bouy, ScaleDef, V(5, 5, 5));
+        em.ensureComponentOn(bouy, bouyDef);
+        em.ensureComponentOn(
+          bouy,
+          RenderableConstructDef,
+          res.assets.ball.proto
+        );
+        em.ensureComponentOn(bouy, ColorDef, ENDESGA16.lightGreen);
+        buoys.push(bouy);
+      }
+    }
+    // console.dir(buoys);
+    const _t1 = vec3.create();
+    const _t2 = vec3.create();
+    em.registerSystem(
+      [bouyDef, PositionDef, UVPosDef],
+      [OceanDef],
+      (es, res) => {
+        // TODO(@darzu): unify with UV ship stuff?
+        if (!es.length) return;
+        // const [ship] = es;
+        const { ocean } = res;
 
-  //     const uv = V(0.5, 0.5);
-  //     let pos = vec3.tmp();
-  //     ocean.uvToPos(pos, uv);
-  //     let disp = vec3.tmp();
-  //     let norm = vec3.tmp();
-  //     ocean.uvToGerstnerDispAndNorm(disp, norm, uv);
-  //     vec3.add(pos, disp, bouy.position);
-  //     // console.log(vec3Dbg(bouy.position));
-  //   },
-  //   "shipBouyancy"
-  // );
-  // em.requireSystem("shipBouyancy");
+        // console.log("running bouyancy");
+        for (let bouy of es) {
+          // const uv = V(0.5, 0.5);
+          const uv = bouy.uvPos;
+          const p = ocean.uvToPos(bouy.position, uv);
+          // p[0] = p[0] * worldUnitPerOceanVerts - WORLD_HEIGHT * 0.5;
+          // p[2] = p[2] * worldUnitPerOceanVerts - WORLD_WIDTH * 0.5;
+          let disp = _t1;
+          ocean.uvToGerstnerDispAndNorm(disp, _t2, uv);
+          vec3.add(bouy.position, disp, bouy.position);
+          // console.log(vec3Dbg(bouy.position));
+        }
+      },
+      "shipBouyancy"
+    );
+    em.requireSystem("shipBouyancy");
+
+    // EM.requireSystem("oceanUVtoPos");
+    // EM.requireSystem("oceanUVDirToRot");
+  }
 
   // end zone
   const dock = createDock();
@@ -389,11 +418,17 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     // g.cameraFollow.yawOffset = 0.0;
     // g.cameraFollow.pitchOffset = -1.001;
 
-    vec3.copy(g.position, [63.61, 22.83, -503.91]);
-    quat.copy(g.rotation, [0.0, 0.89, 0.0, -0.45]);
+    // vec3.copy(g.position, [63.61, 22.83, -503.91]);
+    // quat.copy(g.rotation, [0.0, 0.89, 0.0, -0.45]);
+    // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
+    // g.cameraFollow.yawOffset = 0.0;
+    // g.cameraFollow.pitchOffset = -0.615;
+
+    vec3.copy(g.position, [63.88, 42.83, -53.13]);
+    quat.copy(g.rotation, [0.0, 0.83, 0.0, 0.56]);
     vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
     g.cameraFollow.yawOffset = 0.0;
-    g.cameraFollow.pitchOffset = -0.615;
+    g.cameraFollow.pitchOffset = -0.738;
 
     em.registerSystem(
       [GhostDef, WorldFrameDef, ColliderDef],
