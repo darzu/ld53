@@ -124,6 +124,8 @@ const DBG_PLAYER = false;
 const WORLD_WIDTH = 1024; // width runs +z
 const WORLD_HEIGHT = 512; // height runs +x
 
+const MOTORBOAT_MODE = false;
+
 // const RED_DAMAGE_CUTTING = 10;
 // const RED_DAMAGE_PER_FRAME = 40;
 // const GREEN_HEALING = 1;
@@ -480,17 +482,28 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
 
   EM.registerSystem(
     [],
-    [InputsDef],
+    [InputsDef, PartyDef],
     (_, res) => {
       const mast = ship.ld52ship.mast()!;
       const rudder = ship.ld52ship.rudder()!;
 
       // furl/unfurl
       if (rudder.turret.mannedId) {
-        const sail = mast.mast.sail()!.sail;
-        if (res.inputs.keyDowns["w"]) sail.unfurledAmount += SAIL_FURL_RATE;
-        if (res.inputs.keyDowns["s"]) sail.unfurledAmount -= SAIL_FURL_RATE;
-        sail.unfurledAmount = clamp(sail.unfurledAmount, sail.minFurl, 1.0);
+        if (MOTORBOAT_MODE) {
+          console.log("here");
+          if (res.inputs.keyDowns["w"]) {
+            vec3.add(
+              ship.linearVelocity,
+              vec3.scale(res.party.dir, 0.1),
+              ship.linearVelocity
+            );
+          }
+        } else {
+          const sail = mast.mast.sail()!.sail;
+          if (res.inputs.keyDowns["w"]) sail.unfurledAmount += SAIL_FURL_RATE;
+          if (res.inputs.keyDowns["s"]) sail.unfurledAmount -= SAIL_FURL_RATE;
+          sail.unfurledAmount = clamp(sail.unfurledAmount, sail.minFurl, 1.0);
+        }
       }
     },
     "furlUnfurl"
