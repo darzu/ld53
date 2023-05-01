@@ -2,8 +2,9 @@ struct VertexOutput {
     @builtin(position) position : vec4<f32>,
     @location(0) @interpolate(flat) normal : vec3<f32>,
     // @location(2) worldPos: vec3<f32>,
-    @location(3) @interpolate(flat) surfAndObjId: u32,
-    @location(1) @interpolate(flat) color : u32,
+    @location(1) @interpolate(flat) color : vec3<f32>,
+    @location(2) @interpolate(flat) surfAndObjId: u32,
+    // @location(1) @interpolate(flat) color : u32,
     // @location(4) @interpolate(flat) id: u32,
 };
 
@@ -18,8 +19,9 @@ fn vert_main(input: VertexInput) -> VertexOutput {
     output.position = scene.cameraViewProjMatrix * worldPos;
     // TODO(@darzu): for non-uniform scaling, we need to use inverse-transpose matrix for normals as per: https://learnopengl.com/Lighting/Basic-Lighting
     output.normal = (meshUni.transform * vec4<f32>(input.normal, 0.0)).xyz;
-    let color = input.color + meshUni.tint;
-    output.color = 100;
+    // let color = input.color + meshUni.tint;
+    // output.color = 100;
+    output.color = input.color + meshUni.tint;
 
     output.surfAndObjId = ((input.surfaceId << 16) >> 16) | (meshUni.id << 16);
     // output.id = meshUni.id;
@@ -39,7 +41,8 @@ fn frag_main(input: VertexOutput) -> FragOut {
     // let normal = normalize(input.normal);
 
     var out: FragOut;
-    out.color = vec4<f32>(f32(input.color / 255), f32(input.color / 255), f32(input.color / 255), 1.0);
+    out.color = vec4<f32>(input.color, 1.0);
+    // out.color = vec4<f32>(f32(input.color / 255), f32(input.color / 255), f32(input.color / 255), 1.0);
     // out.position = vec4(input.worldPos, 0.0);
     // out.position = vec4(0.0, 0.0, 0.0, 0.0);
 
