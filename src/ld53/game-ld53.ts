@@ -205,7 +205,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
         // ...shadowPipelines,
         stdRenderPipeline, // SLOW
         // renderGrassPipe,
-        // renderOceanPipe,
+        renderOceanPipe,
         outlineRender, // 2ms
         deferredPipeline, // 10ms
         skyPipeline,
@@ -777,7 +777,8 @@ async function createPlayer() {
   return p;
 }
 
-const terraVertsPerWorldUnit = 0.25;
+const terraVertsPerWorldUnit = 0.1;
+// const terraVertsPerWorldUnit = 0.25;
 const worldUnitPerTerraVerts = 1 / terraVertsPerWorldUnit;
 const terraZCount = Math.floor(WORLD_WIDTH * terraVertsPerWorldUnit);
 const terraXCount = Math.floor(WORLD_HEIGHT * terraVertsPerWorldUnit);
