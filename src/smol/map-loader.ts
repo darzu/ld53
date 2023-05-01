@@ -28,8 +28,8 @@ export type MapName = typeof MapPaths[number];
 
 export const MapHelp: Partial<Record<MapName, string>> = {
   "tutorial-attack-the-towers":
-    "the dock's straight ahead. use your cannons on these towers!",
-  "tutorial-dock-under-cannon": "sail to the dock to deliver your cargo!",
+    "the dock is straight ahead. use your cannons on these towers!",
+  "tutorial-dock-under-cannon": "sail to the green dock to deliver your cargo!",
 };
 
 export interface MapBytes {

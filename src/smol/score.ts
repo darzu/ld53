@@ -53,7 +53,6 @@ EM.registerSystem(
   [ShipHealthDef],
   [ScoreDef, TextDef, TimeDef, PartyDef],
   async (es, res) => {
-    console.log("start");
     const ship = es[0];
     if (!ship) return;
     if (!res.score.endZone()) return;
@@ -123,7 +122,6 @@ EM.registerSystem(
         }
       }
     }
-    console.log("finish");
   },
   "detectGameEnd"
 );

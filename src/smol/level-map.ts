@@ -322,7 +322,7 @@ export async function setMap(em: EntityManager, name: MapName) {
     mapCache.set(name, levelMap);
   }
 
-  res.text.helpText = MapHelp[name] || "";
+  res.text.helpText = MapHelp[name] || " ";
 
   // TODO(@darzu): FIX LAND SPAWN
   const texResource = res.renderer.renderer.getCyResource(LandMapTexPtr)!;
