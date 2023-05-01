@@ -27,6 +27,8 @@ export const MapPaths = [
 export type MapName = (typeof MapPaths)[number];
 
 export const MapHelp: Partial<Record<MapName, string>> = {
+  "tutorial-attack-the-towers":
+    "the dock's straight ahead. use your cannon on these towers!",
   "tutorial-dock-under-cannon": "sail to the dock to deliver cargo",
 };
 

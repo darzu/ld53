@@ -820,7 +820,7 @@ EM.registerSystem(
       );
       b.then((b) => {
         if (missed) {
-          vec3.set(0.8, 0.2, 0.2, b.color);
+          //vec3.set(0.8, 0.2, 0.2, b.color);
         }
       });
       tower.stoneTower.lastFired = res.time.time;
