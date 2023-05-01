@@ -72,7 +72,7 @@ fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
   let normalAndFresnel = textureSample(normTex, samp, uv);
   let normal = normalAndFresnel.xyz;
   // let hasFresnel = normalAndFresnel.w;
-  let worldPos = textureSample(posTex, samp, uv).xyz;
+  // let worldPos = textureSample(posTex, samp, uv).xyz;
 
   // read gerstner directly for normal:
   // let gerst = gerstner(worldPos.zx, scene.time);
@@ -114,15 +114,15 @@ fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
   //     }
 
   //     // XY is in (-1, 1) space, Z is in (0, 1) space
-      let posFromLight = (viewProj * vec4(worldPos, 1.0)).xyz;
+      // let posFromLight = (viewProj * vec4(worldPos, 1.0)).xyz;
       
   //     // Convert XY to (0, 1), Y is flipped because texture coords are Y-down.
-      let shadowPos = vec3<f32>(posFromLight.xy * vec2<f32>(0.5, -0.5) + vec2<f32>(0.5, 0.5),
-                                posFromLight.z
-                                );
+      // let shadowPos = vec3<f32>(posFromLight.xy * vec2<f32>(0.5, -0.5) + vec2<f32>(0.5, 0.5),
+      //                           posFromLight.z
+      //                           );
 
-      let shadowVis = getShadowVis(shadowPos, normal, toLight, cascadeIdx);
-  // let shadowVis = 1.0;
+      // let shadowVis = getShadowVis(shadowPos, normal, toLight, cascadeIdx);
+  let shadowVis = 1.0;
 
       // lightingIntensity += (light.ambient.r * attenuation) 
       //   // + (light.diffuse.r * lightAng * attenuation * shadowVis);
