@@ -6,6 +6,8 @@ import { createRef, Ref } from "../em_helpers.js";
 import { Component, EM, Entity, EntityW } from "../entity-manager.js";
 import { createEntityPool } from "../entity-pool.js";
 import { Bullet, BulletDef, fireBullet } from "../games/bullet.js";
+import { GravityDef } from "../games/gravity.js";
+import { LifetimeDef } from "../games/lifetime.js";
 import { PartyDef } from "../games/party.js";
 import { Path } from "../games/shipyard.js";
 import { jitter } from "../math.js";
@@ -21,6 +23,7 @@ import {
 } from "../physics/aabb.js";
 import { emptyLine } from "../physics/broadphase.js";
 import { ColliderDef } from "../physics/collider.js";
+import { AngularVelocityDef, LinearVelocityDef } from "../physics/motion.js";
 import {
   PhysicsResultsDef,
   WorldFrameDef,
@@ -29,6 +32,7 @@ import {
   PhysicsParentDef,
   PositionDef,
   RotationDef,
+  ScaleDef,
 } from "../physics/transform.js";
 import { Mesh } from "../render/mesh.js";
 import {
@@ -41,6 +45,8 @@ import { TimeDef } from "../time.js";
 import { assert } from "../util.js";
 import { vec3Dbg } from "../utils-3d.js";
 
+const GRAVITY = 6.0 * 0.00001;
+
 interface Brick {
   aabb: AABB;
   // index of first pos in the mesh
@@ -49,6 +55,7 @@ interface Brick {
   knockedOut: boolean;
   health: number;
   pos: vec3[];
+  color: vec3;
 }
 
 interface TowerRow {
@@ -219,13 +226,13 @@ function knockOutBricks(tower: Tower, aabb: AABB, shrink = false): number {
 
 // takes a tower-space AABB--not world space!
 function knockOutBricksByBullet(
-  tower: Tower,
+  tower: EntityW<[typeof StoneTowerDef]>,
   aabb: AABB,
   bullet: Bullet
 ): number {
   // [bricks knocked out, updated health]
   let bricksKnockedOut = 0;
-  for (let row of tower.rows) {
+  for (let row of tower.stoneTower.rows) {
     if (doesOverlapAABB(row.aabb, aabb)) {
       for (let brick of row.bricks) {
         if (bullet.health <= 0) {
@@ -236,10 +243,15 @@ function knockOutBricksByBullet(
           bullet.health -= dmg;
           brick.health -= dmg;
           if (brick.health <= 0) {
-            knockOutBrickAtIndex(tower, brick.index);
+            knockOutBrickAtIndex(tower.stoneTower, brick.index);
             if (!brick.knockedOut) {
               brick.knockedOut = true;
               bricksKnockedOut++;
+              flyingBrickPool.spawn().then((flyingBrick) => {
+                flyingBrick.physicsParent.id = tower.id;
+                vec3.copy(flyingBrick.position, brick.pos[0]);
+                vec3.copy(flyingBrick.color, brick.color);
+              });
             }
           }
         }
@@ -275,7 +287,7 @@ const approxBrickWidth: number = 5;
 const approxBrickHeight: number = 2;
 const brickDepth: number = 2.5;
 const coolMode: boolean = false;
-const startingBrickHealth = 10;
+const startingBrickHealth = 1;
 
 export function calculateNAndBrickWidth(
   radius: number,
@@ -285,6 +297,8 @@ export function calculateNAndBrickWidth(
   const brickWidth = radius * 2 * Math.sin(Math.PI / n);
   return [n, brickWidth];
 }
+
+const baseColor = ENDESGA16.lightGray;
 
 export const towerPool = createEntityPool<
   [typeof StoneTowerDef, typeof PositionDef, typeof RotationDef]
@@ -367,6 +381,7 @@ export const towerPool = createEntityPool<
       //
       const brightness = Math.random() * 0.05;
       const color = V(brightness, brightness, brightness);
+      vec3.add(color, baseColor, color);
       for (let i = 0; i < 6; i++) {
         mesh.colors.push(color);
       }
@@ -376,6 +391,7 @@ export const towerPool = createEntityPool<
         knockedOut: false,
         health: startingBrickHealth,
         pos,
+        color,
       };
     }
 
@@ -434,7 +450,6 @@ export const towerPool = createEntityPool<
     });
 
     EM.ensureComponentOn(tower, RenderableConstructDef, mesh);
-    EM.ensureComponentOn(tower, ColorDef, ENDESGA16.darkGray);
     return tower;
   },
   onSpawn: async (p) => {
@@ -473,6 +488,89 @@ export const towerPool = createEntityPool<
 export async function spawnStoneTower() {
   return towerPool.spawn();
 }
+
+export const FlyingBrickDef = EM.defineComponent("flyingBrick", () => true);
+
+export const flyingBrickPool = createEntityPool<
+  [
+    typeof FlyingBrickDef,
+    typeof PositionDef,
+    typeof RotationDef,
+    typeof LinearVelocityDef,
+    typeof AngularVelocityDef,
+    typeof ColorDef,
+    typeof LifetimeDef,
+    typeof PhysicsParentDef
+  ]
+>({
+  max: 50,
+  maxBehavior: "rand-despawn",
+  create: async () => {
+    const res = await EM.whenResources(AssetsDef);
+    const brick = EM.new();
+    EM.ensureComponentOn(brick, FlyingBrickDef);
+    EM.ensureComponentOn(brick, PositionDef);
+    EM.ensureComponentOn(brick, RotationDef);
+    EM.ensureComponentOn(brick, LinearVelocityDef);
+    EM.ensureComponentOn(brick, AngularVelocityDef);
+    EM.ensureComponentOn(brick, ColorDef);
+    EM.ensureComponentOn(brick, LifetimeDef);
+    EM.ensureComponentOn(brick, RenderableConstructDef, res.assets.cube.proto);
+    EM.ensureComponentOn(brick, GravityDef, V(0, -GRAVITY, 0));
+    EM.ensureComponentOn(
+      brick,
+      ScaleDef,
+      V(approxBrickWidth, approxBrickHeight, brickDepth)
+    );
+    EM.ensureComponentOn(brick, PhysicsParentDef);
+    return brick;
+  },
+  onSpawn: async (e) => {
+    EM.tryRemoveComponent(e.id, DeadDef);
+    if (RenderableDef.isOn(e)) e.renderable.hidden = false;
+
+    // set random rotation and angular velocity
+    quat.identity(e.rotation);
+    quat.rotateX(e.rotation, Math.PI * 0.5, e.rotation);
+    quat.rotateY(e.rotation, Math.PI * Math.random(), e.rotation);
+    quat.rotateZ(e.rotation, Math.PI * Math.random(), e.rotation);
+
+    vec3.set(
+      Math.random() - 0.5,
+      Math.random() - 0.5,
+      Math.random() - 0.5,
+      e.angularVelocity
+    );
+    vec3.scale(e.angularVelocity, 0.1, e.angularVelocity);
+    vec3.set(
+      Math.random() - 0.5,
+      Math.random() - 0.5,
+      Math.random() - 0.5,
+      e.linearVelocity
+    );
+    vec3.scale(e.linearVelocity, 0.1, e.angularVelocity);
+
+    e.lifetime.startMs = 8000;
+    e.lifetime.ms = e.lifetime.startMs;
+  },
+  onDespawn: (e) => {
+    EM.ensureComponentOn(e, DeadDef);
+    if (RenderableDef.isOn(e)) e.renderable.hidden = true;
+    e.dead.processed = true;
+  },
+});
+
+EM.registerSystem(
+  [FlyingBrickDef, DeadDef],
+  [],
+  (es, _) =>
+    es.forEach((e) => {
+      if (!e.dead.processed) {
+        flyingBrickPool.despawn(e);
+      }
+    }),
+  "despawnFlyingBricks"
+);
 
 const __previousPartyPos = vec3.create();
 let __prevTime = 0;
@@ -578,7 +676,7 @@ EM.registerSystem(
       */
 
       const v = tower.stoneTower.projectileSpeed;
-      const g = 6.0 * 0.00001;
+      const g = GRAVITY;
 
       let x = towerSpaceTarget[0] - tower.stoneTower.cannon()!.position[0];
       const y = towerSpaceTarget[1] - tower.stoneTower.cannon()!.position[1];
@@ -714,7 +812,7 @@ EM.registerSystem(
           transformAABB(ballAABB, ball.world.transform);
           transformAABB(ballAABB, invertedTransform);
           totalKnockedOut += knockOutBricksByBullet(
-            tower.stoneTower,
+            tower,
             ballAABB,
             ball.bullet
           );
