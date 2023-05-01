@@ -285,13 +285,13 @@ export const canvasFormat: GPUTextureFormat =
 export const unlitTexturePtr = CY.createTexture("unlitTexture", {
   size: [100, 100],
   onCanvasResize: (w, h) => [w, h],
-  format: "rgba16float",
+  format: "rgba8unorm",
   // TODO(@darzu): support anti-aliasing again
 });
 export const litTexturePtr = CY.createTexture("litTexture", {
   size: [100, 100],
   onCanvasResize: (w, h) => [w, h],
-  format: "rgba16float",
+  format: "rgba8unorm",
   // TODO(@darzu): support anti-aliasing again
 });
 
