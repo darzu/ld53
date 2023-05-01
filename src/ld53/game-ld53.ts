@@ -608,6 +608,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
 
   EM.requireSystem("stoneTowerAttack");
   EM.requireSystem("stoneTowerDamage");
+  EM.requireSystem("despawnFlyingBricks");
 
   EM.requireSystem("landShipCollision");
 
