@@ -88,14 +88,17 @@ fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
   const fresnelColor = vec3(0.02,0.81,0.91);
   // TODO(@darzu): clean up fresnel
   // const f0 = 0.02;
-  //     let light = pointLights.ms[0];
-  //     let toLight_ = light.position - worldPos;
-  //     let lightDist = length(toLight_);
-  //     let toLight = toLight_ / lightDist;
+      let light = pointLights.ms[0];
+      // let toLight_ = light.position - worldPos;
+      // let lightDist = length(toLight_);
+      // let toLight = toLight_ / lightDist;
+      let toLight = light.position;
   //     let toCamera = scene.cameraPos - worldPos;
-  //     let attenuation = 1.0 / (light.constant + light.linear * lightDist +
-  //                               light.quadratic * lightDist * lightDist);
-  //     let lightAng = clamp(dot(toLight, normal), 0.0, 1.0);
+      // let attenuation = 1.0 / light.constant;
+      let attenuation = 1.0;
+      // let attenuation = 1.0 / (light.constant + light.linear * lightDist +
+      //                           light.quadratic * lightDist * lightDist);
+      let lightAng = clamp(dot(toLight, normal), 0.0, 1.0);
   //     let halfway = normalize(toLight + normal); // TODO(@darzu): use?!
   //     let cameraAng = clamp(dot(normalize(toCamera), normal), 0.0, 1.0);
 
@@ -119,9 +122,12 @@ fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
   //                               );
 
   //     let shadowVis = getShadowVis(shadowPos, normal, toLight, cascadeIdx);
+  let shadowVis = 1.0;
 
-  //     lightingIntensity += (light.ambient.r * attenuation) 
-  //       + (light.diffuse.r * lightAng * attenuation * shadowVis);
+      // lightingIntensity += (light.ambient.r * attenuation) 
+      //   // + (light.diffuse.r * lightAng * attenuation * shadowVis);
+      lightingIntensity += light.ambient.r
+        + light.diffuse.r * lightAng * shadowVis;
 
   //     // Fresnel-Schlick ?
   //     fresnelIntensity += f0 + (1.0 - f0) * pow(1.0 - cameraAng, 5.0);
@@ -129,7 +135,8 @@ fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
   // HACK: disables fresnel
   // fresnelIntensity *= hasFresnel;
 
-  let litColor = normal;
+  // let litColor = normal;
+  let litColor = color * lightingIntensity;
   // let litColor = mix(
   //   color * lightingIntensity, 
   //   fresnelColor, 

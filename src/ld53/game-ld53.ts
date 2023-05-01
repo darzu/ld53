@@ -227,6 +227,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   vec3.copy(sunlight.pointLight.ambient, [0.2, 0.2, 0.2]);
   vec3.copy(sunlight.pointLight.diffuse, [0.5, 0.5, 0.5]);
   em.ensureComponentOn(sunlight, PositionDef, V(50, 300, 10));
+  vec3.normalize(sunlight.position, sunlight.position);
   em.ensureComponentOn(sunlight, RenderableConstructDef, res.assets.ball.proto);
 
   // score
