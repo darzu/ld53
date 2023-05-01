@@ -157,6 +157,8 @@ const level2DtoWorld3D = (levelPos: vec2, y: number, out: vec3) =>
 
 export const mapJfa = createJfaPipelines(LandMapTexPtr, "exterior");
 
+const STONE_TOWER_HEIGHT = 10;
+
 export async function initLD53(em: EntityManager, hosting: boolean) {
   const dbgGrid = [
     //
@@ -537,7 +539,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     // spawn towers
     const tower3dPosesAndDirs: [vec3, number][] = level.levelMap.towers.map(
       ([tPos, tDir]) => [
-        level2DtoWorld3D(tPos, -5, vec3.create()),
+        level2DtoWorld3D(tPos, STONE_TOWER_HEIGHT, vec3.create()),
         Math.atan2(-tDir[0], -tDir[1]),
       ]
     );
@@ -658,7 +660,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
 
   const tower3dPosesAndDirs: [vec3, number][] = level.levelMap.towers.map(
     ([tPos, tDir]) => [
-      level2DtoWorld3D(tPos, -5, vec3.create()),
+      level2DtoWorld3D(tPos, STONE_TOWER_HEIGHT, vec3.create()),
       Math.atan2(-tDir[0], -tDir[1]),
     ]
   );
