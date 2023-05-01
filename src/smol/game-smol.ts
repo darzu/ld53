@@ -196,7 +196,8 @@ export async function initSmol(em: EntityManager, hosting: boolean) {
   em.requireSystem("detectGameEnd");
 
   // start map
-  await setMap(em, "obstacles1");
+  // TODO(@darzu): BROKEN
+  // await setMap(em, "obstacles1");
 
   // once the map is loaded, we can run JFA
   res.renderer.renderer.submitPipelines([], [...mapJfa.allPipes()]);

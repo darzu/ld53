@@ -19,9 +19,9 @@ export const MapPaths = [
   "tutorial-dock-under-cannon",
   "dont-go-right",
   "thread-needle",
+  "every-which-way",
   "rangetest",
   "tutorial2",
-  "obstacles1",
 ] as const;
 
 export type MapName = (typeof MapPaths)[number];
