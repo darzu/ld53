@@ -7,6 +7,7 @@ import { EM, Entity, EntityW } from "../entity-manager.js";
 import { createEntityPool } from "../entity-pool.js";
 import { fireBullet } from "../games/bullet.js";
 import { PartyDef } from "../games/party.js";
+import { Path } from "../games/shipyard.js";
 import { jitter } from "../math.js";
 import {
   AABB,
@@ -213,6 +214,15 @@ const approxBrickHeight: number = 2;
 const brickDepth: number = 2.5;
 const coolMode: boolean = false;
 
+export function calculateNAndBrickWidth(
+  radius: number,
+  approxBrickWidth: number
+): [number, number] {
+  const n = Math.floor(Math.PI / Math.asin(approxBrickWidth / (2 * radius)));
+  const brickWidth = radius * 2 * Math.sin(Math.PI / n);
+  return [n, brickWidth];
+}
+
 export const towerPool = createEntityPool<
   [typeof StoneTowerDef, typeof PositionDef, typeof RotationDef]
 >({
@@ -238,17 +248,6 @@ export const towerPool = createEntityPool<
     EM.ensureComponentOn(tower, PositionDef);
     EM.ensureComponentOn(tower, RotationDef);
     const mesh = tower.stoneTower.mesh;
-
-    function calculateNAndBrickWidth(
-      radius: number,
-      approxBrickWidth: number
-    ): [number, number] {
-      const n = Math.floor(
-        Math.PI / Math.asin(approxBrickWidth / (2 * radius))
-      );
-      const brickWidth = radius * 2 * Math.sin(Math.PI / n);
-      return [n, brickWidth];
-    }
 
     const rows = Math.floor(height / approxBrickHeight);
     const brickHeight = height / rows;

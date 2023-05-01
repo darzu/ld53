@@ -33,6 +33,7 @@ import { createHomeShip, homeShipAABBs } from "../games/shipyard.js";
 import { getAABBFromMesh, transformMesh } from "../render/mesh.js";
 import { createWoodHealth, WoodHealthDef, WoodStateDef } from "../wood.js";
 import { addGizmoChild } from "../utils-game.js";
+import { getSizeFromAABB } from "../physics/aabb.js";
 
 export const ShipDef = EM.defineComponent("ld52ship", () => ({
   mast: createRef(0, [MastDef, RotationDef]),
@@ -77,7 +78,10 @@ export async function createShip(em: EntityManager) {
   const timberHealth = createWoodHealth(homeShip.timberState);
   em.ensureComponentOn(ent, WoodHealthDef, timberHealth);
 
-  const timberAABB = getAABBFromMesh(homeShip.timberMesh);
+  // const timberAABB = getAABBFromMesh(homeShip.timberMesh);
+  // console.log("ship size:");
+  // console.dir(timberAABB);
+  // console.dir(getSizeFromAABB(timberAABB));
 
   const mc: MultiCollider = {
     shape: "Multi",
@@ -128,6 +132,8 @@ export async function createShip(em: EntityManager) {
   // EM.ensureComponentOn(gizmo, ScaleDef, V(10, 10, 10));
   // EM.ensureComponentOn(gizmo, PhysicsParentDef, ent.id);
   // EM.ensureComponentOn(gizmo, RenderableConstructDef, res.assets.gizmo.proto);
+
+  addGizmoChild(ent, 10);
 
   return ent;
 }

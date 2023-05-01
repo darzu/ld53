@@ -246,18 +246,28 @@ export async function initShipyardGame(em: EntityManager, hosting: boolean) {
   // TIMBER
   const timber = em.new();
 
-  const {
-    timberState,
-    timberMesh,
-    ribCount,
-    ribSpace,
-    ribWidth,
-    ceilHeight,
-    floorHeight,
-    floorLength,
-    floorWidth,
-  } = createHomeShip();
-  // const [timberMesh, timberState] = createBarrelMesh();
+  // const {
+  //   timberState,
+  //   timberMesh,
+  //   ribCount,
+  //   ribSpace,
+  //   ribWidth,
+  //   ceilHeight,
+  //   floorHeight,
+  //   floorLength,
+  //   floorWidth,
+  // } = createHomeShip();
+
+  // TODO(@darzu): remove
+  const ribCount = 10;
+  const ribSpace = 3;
+  const ribWidth = 1;
+  const ceilHeight = 20;
+  const floorHeight = 10;
+  const floorLength = 20;
+  const floorWidth = 10;
+
+  const [timberMesh, timberState] = createBarrelMesh();
 
   em.ensureComponentOn(timber, RenderableConstructDef, timberMesh);
   em.ensureComponentOn(timber, WoodStateDef, timberState);
@@ -268,6 +278,7 @@ export async function initShipyardGame(em: EntityManager, hosting: boolean) {
   const timberAABB = getAABBFromMesh(timberMesh);
   // const timberPos = getCenterFromAABB(timberAABB);
   const timberPos = vec3.create();
+  // timberPos[1] += 5;
   // const timberPos = vec3.clone(res.assets.timber_rib.center);
   // vec3.negate(timberPos, timberPos);
   // vec3.scale(timberPos, timberPos, scale);
@@ -292,44 +303,44 @@ export async function initShipyardGame(em: EntityManager, hosting: boolean) {
   // CANNONS
   const realCeilHeight = ceilHeight + timberPos[1];
   const realFloorHeight = timberPos[1] + floorHeight;
-  for (let i = 0; i < 2; i++) {
-    const isLeft = i === 0 ? 1 : -1;
-    const cannon = em.new();
-    em.ensureComponentOn(
-      cannon,
-      RenderableConstructDef,
-      res.assets.ld51_cannon.proto
-    );
-    em.ensureComponentOn(
-      cannon,
-      PositionDef,
-      V(-7.5, realFloorHeight + 2, -4 * isLeft)
-    );
-    em.ensureComponentOn(cannon, RotationDef);
-    quat.rotateX(cannon.rotation, Math.PI * 0.01 * isLeft, cannon.rotation);
-    if (isLeft !== 1) {
-      quat.rotateY(cannon.rotation, Math.PI, cannon.rotation);
-    }
-    em.ensureComponentOn(cannon, ColorDef, ENDESGA16.darkGreen);
-    // TODO(@darzu): USE PALETTE PROPERLY
-    // TODO(@darzu): USE PALETTE PROPERLY
-    vec3.scale(cannon.color, 0.5, cannon.color);
-    {
-      const interactBox = EM.new();
-      const interactAABB = copyAABB(createAABB(), res.assets.ld51_cannon.aabb);
-      vec3.scale(interactAABB.min, 2, interactAABB.min);
-      vec3.scale(interactAABB.max, 2, interactAABB.max);
-      EM.ensureComponentOn(interactBox, PhysicsParentDef, cannon.id);
-      EM.ensureComponentOn(interactBox, PositionDef, V(0, 0, 0));
-      EM.ensureComponentOn(interactBox, ColliderDef, {
-        shape: "AABB",
-        solid: false,
-        aabb: interactAABB,
-      });
-      em.ensureComponentOn(cannon, InteractableDef, interactBox.id);
-    }
-    em.ensureComponentOn(cannon, LD51CannonDef);
-  }
+  // for (let i = 0; i < 2; i++) {
+  //   const isLeft = i === 0 ? 1 : -1;
+  //   const cannon = em.new();
+  //   em.ensureComponentOn(
+  //     cannon,
+  //     RenderableConstructDef,
+  //     res.assets.ld51_cannon.proto
+  //   );
+  //   em.ensureComponentOn(
+  //     cannon,
+  //     PositionDef,
+  //     V(-7.5, realFloorHeight + 2, -4 * isLeft)
+  //   );
+  //   em.ensureComponentOn(cannon, RotationDef);
+  //   quat.rotateX(cannon.rotation, Math.PI * 0.01 * isLeft, cannon.rotation);
+  //   if (isLeft !== 1) {
+  //     quat.rotateY(cannon.rotation, Math.PI, cannon.rotation);
+  //   }
+  //   em.ensureComponentOn(cannon, ColorDef, ENDESGA16.darkGreen);
+  //   // TODO(@darzu): USE PALETTE PROPERLY
+  //   // TODO(@darzu): USE PALETTE PROPERLY
+  //   vec3.scale(cannon.color, 0.5, cannon.color);
+  //   {
+  //     const interactBox = EM.new();
+  //     const interactAABB = copyAABB(createAABB(), res.assets.ld51_cannon.aabb);
+  //     vec3.scale(interactAABB.min, 2, interactAABB.min);
+  //     vec3.scale(interactAABB.max, 2, interactAABB.max);
+  //     EM.ensureComponentOn(interactBox, PhysicsParentDef, cannon.id);
+  //     EM.ensureComponentOn(interactBox, PositionDef, V(0, 0, 0));
+  //     EM.ensureComponentOn(interactBox, ColliderDef, {
+  //       shape: "AABB",
+  //       solid: false,
+  //       aabb: interactAABB,
+  //     });
+  //     em.ensureComponentOn(cannon, InteractableDef, interactBox.id);
+  //   }
+  //   em.ensureComponentOn(cannon, LD51CannonDef);
+  // }
 
   // TODO(@darzu): use a pool for goodballs
   const GoodBallDef = EM.defineComponent(

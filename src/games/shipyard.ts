@@ -283,29 +283,6 @@ export function createHomeShip(): HomeShip {
     // dbgPathWithGizmos(keelPath);
   }
 
-  function fixPathBasis(
-    path: Path,
-    newX: vec3.InputT,
-    newY: vec3.InputT,
-    newZ: vec3.InputT
-  ) {
-    // TODO(@darzu): PERF. Must be a better way to do this...
-    const fixRot = quat.fromMat3(
-      mat3.fromValues(
-        newX[0],
-        newX[1],
-        newX[2],
-        newY[0],
-        newY[1],
-        newY[2],
-        newZ[0],
-        newZ[1],
-        newZ[2]
-      )
-    );
-    path.forEach((p) => quat.mul(p.rot, fixRot, p.rot));
-  }
-
   const keelAABB = createAABB();
   keelPath.forEach((p) => updateAABBWithPoint(keelAABB, p.pos));
   const keelSize = getSizeFromAABB(keelAABB, vec3.create());
@@ -753,9 +730,9 @@ export interface PathNode {
 }
 export type Path = PathNode[];
 
-function nodeFromMat4(cursor: mat4): PathNode {
+export function pathNodeFromMat4(cursor: mat4): PathNode {
   const rot = mat4.getRotation(cursor, quat.create());
-  const pos = vec3.transformMat4(vec3.ZEROS, cursor, vec3.create());
+  const pos = mat4.getTranslation(cursor, vec3.create());
   return {
     pos,
     rot,
@@ -1078,4 +1055,27 @@ export function appendTimberRib(b: TimberBuilder, ccw: boolean) {
   // console.dir(b.mesh);
 
   return b.mesh;
+}
+
+export function fixPathBasis(
+  path: Path,
+  newX: vec3.InputT,
+  newY: vec3.InputT,
+  newZ: vec3.InputT
+) {
+  // TODO(@darzu): PERF. Must be a better way to do this...
+  const fixRot = quat.fromMat3(
+    mat3.fromValues(
+      newX[0],
+      newX[1],
+      newX[2],
+      newY[0],
+      newY[1],
+      newY[2],
+      newZ[0],
+      newZ[1],
+      newZ[2]
+    )
+  );
+  path.forEach((p) => quat.mul(p.rot, fixRot, p.rot));
 }
