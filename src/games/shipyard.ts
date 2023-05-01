@@ -485,7 +485,7 @@ export function createHomeShip(): HomeShip {
   // PLANK PARAMS
   // const plankCount = 20;
   // const plankWidth = 0.4;
-  const plankWidth = 2.0;
+  const plankWidth = 0.4;
   const plankDepth = 0.2;
 
   // RIBS W/ SLOTS
