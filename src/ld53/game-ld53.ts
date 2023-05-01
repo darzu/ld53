@@ -210,7 +210,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
         deferredPipeline, // 10ms
         skyPipeline,
         postProcess,
-        ...(res.dev.showConsole ? dbgGridCompose : []),
+        // ...(res.dev.showConsole ? dbgGridCompose : []),
       ];
     },
     "smolGameRenderPipelines"
@@ -260,7 +260,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   // em.ensureComponentOn(sky, ColorDef, V(0.9, 0.9, 0.9));
 
   // ocean
-  const oceanVertsPerWorldUnit = 0.02;
+  const oceanVertsPerWorldUnit = 0.25;
   const worldUnitPerOceanVerts = 1 / oceanVertsPerWorldUnit;
   const oceanZCount = Math.floor(WORLD_WIDTH * oceanVertsPerWorldUnit);
   const oceanXCount = Math.floor(WORLD_HEIGHT * oceanVertsPerWorldUnit);
