@@ -72,7 +72,7 @@ fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
   let normalAndFresnel = textureSample(normTex, samp, uv);
   let normal = normalAndFresnel.xyz;
   // let hasFresnel = normalAndFresnel.w;
-  // let worldPos = textureSample(posTex, samp, uv).xyz;
+  let worldPos = textureSample(posTex, samp, uv).xyz;
 
   // read gerstner directly for normal:
   // let gerst = gerstner(worldPos.zx, scene.time);
@@ -106,23 +106,23 @@ fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
   //     let shadowFullZ = shadowFull.z / shadowFull.w;
 
   //     // TODO(@darzu): DBG: try outputing depth from camera as result?
-  //     var cascadeIdx = 0u;
-  //     var viewProj = pointLights.ms[0].viewProj0;
+      var cascadeIdx = 0u;
+      var viewProj = pointLights.ms[0].viewProj0;
   //     if (shadowFullZ > light.depth0) {
   //       cascadeIdx = 1u;
   //       viewProj = pointLights.ms[0].viewProj1;
   //     }
 
   //     // XY is in (-1, 1) space, Z is in (0, 1) space
-  //     let posFromLight = (viewProj * vec4(worldPos, 1.0)).xyz;
+      let posFromLight = (viewProj * vec4(worldPos, 1.0)).xyz;
       
   //     // Convert XY to (0, 1), Y is flipped because texture coords are Y-down.
-  //     let shadowPos = vec3<f32>(posFromLight.xy * vec2<f32>(0.5, -0.5) + vec2<f32>(0.5, 0.5),
-  //                               posFromLight.z
-  //                               );
+      let shadowPos = vec3<f32>(posFromLight.xy * vec2<f32>(0.5, -0.5) + vec2<f32>(0.5, 0.5),
+                                posFromLight.z
+                                );
 
-  //     let shadowVis = getShadowVis(shadowPos, normal, toLight, cascadeIdx);
-  let shadowVis = 1.0;
+      let shadowVis = getShadowVis(shadowPos, normal, toLight, cascadeIdx);
+  // let shadowVis = 1.0;
 
       // lightingIntensity += (light.ambient.r * attenuation) 
       //   // + (light.diffuse.r * lightAng * attenuation * shadowVis);
