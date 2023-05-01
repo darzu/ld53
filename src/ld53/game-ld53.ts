@@ -809,7 +809,7 @@ async function resetLand() {
 
     // console.log(`heightmap minY: ${minY}`);
     const hm = EM.new();
-    EM.ensureComponentOn(hm, RenderableConstructDef, terraMesh);
+    // EM.ensureComponentOn(hm, RenderableConstructDef, terraMesh);
     EM.ensureComponentOn(hm, PositionDef);
     // TODO(@darzu): maybe do a sable-like gradient accross the terrain, based on view dist or just uv?
     // EM.ensureComponentOn(hm, ColorDef, V(0.4, 0.2, 0.2));
