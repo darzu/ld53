@@ -1,15 +1,15 @@
 struct VertexOutput {
     // TODO(@darzu): can we get rid of worldPos if we do our own depth invert?
-    // @location(0) @interpolate(flat) normal : vec3<f32>,
+    @location(0) @interpolate(flat) normal : vec3<f32>,
     // @location(1) @interpolate(flat) color : vec3<f32>,
     // @location(2) @interpolate(flat) worldPos: vec4<f32>,
     // @location(3) @interpolate(flat) uv: vec2<f32>,
     // @location(0) normal : vec3<f32>,
-    @location(0) color : vec3<f32>,
+    @location(1) color : vec3<f32>,
     // @location(2) worldPos: vec4<f32>,
-    @location(1) uv: vec2<f32>,
-    @location(2) @interpolate(flat) surface: u32,
-    @location(3) @interpolate(flat) id: u32,
+    @location(2) uv: vec2<f32>,
+    @location(3) @interpolate(flat) surface: u32,
+    @location(4) @interpolate(flat) id: u32,
     @builtin(position) position : vec4<f32>,
 };
 
@@ -52,7 +52,7 @@ fn vert_main(input: VertexInput) -> VertexOutput {
     output.position = scene.cameraViewProjMatrix * finalPos;
     // TODO: use inverse-transpose matrix for normals as per: https://learnopengl.com/Lighting/Basic-Lighting
     //output.normal = normalize(meshUni.transform * vec4<f32>(normal, 0.0)).xyz;
-    // output.normal = normalize(meshUni.transform * vec4<f32>(gerstNormal, 0.0)).xyz;
+    output.normal = normalize(meshUni.transform * vec4<f32>(gerstNormal, 0.0)).xyz;
     output.color = color + meshUni.tint;
     // output.color = tangent; // DBG TANGENT
     //output.color = output.normal;
@@ -66,9 +66,9 @@ fn vert_main(input: VertexInput) -> VertexOutput {
 
 struct FragOut {
   @location(0) color: vec4<f32>,
-  // @location(1) normal: vec4<f32>,
+  @location(1) normal: vec4<f32>,
   // @location(2) position: vec4<f32>,
-  @location(1) surface: vec2<u32>,
+  @location(2) surface: vec2<u32>,
 }
 
 @fragment
@@ -83,7 +83,8 @@ fn frag_main(input: VertexOutput) -> FragOut {
 
     // TODO(@darzu): this normal is way different then std-mesh's normal
     // out.normal = vec4(normalize((scene.cameraViewProjMatrix * vec4<f32>(input.normal, 0.0)).xyz), 1.0);
-    // out.normal = vec4<f32>(normalize(input.normal), fresnel);
+
+    out.normal = vec4<f32>(normalize(input.normal), fresnel);
     // out.position = input.worldPos;
 
     out.surface.r = input.surface;
