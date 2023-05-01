@@ -202,7 +202,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     (_, res) => {
       // renderer
       res.renderer.pipelines = [
-        ...shadowPipelines,
+        // ...shadowPipelines,
         stdRenderPipeline, // SLOW
         // renderGrassPipe,
         // renderOceanPipe,
