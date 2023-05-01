@@ -298,14 +298,14 @@ export const litTexturePtr = CY.createTexture("litTexture", {
 export const worldNormsAndFresTexPtr = CY.createTexture("worldNormsTex", {
   size: [100, 100],
   onCanvasResize: (w, h) => [w, h],
-  format: "rgba16float",
+  format: "rgba8unorm",
   // TODO(@darzu): support anti-aliasing again
 });
 
 export const positionsTexturePtr = CY.createTexture("positionsTexture", {
   size: [100, 100],
   onCanvasResize: (w, h) => [w, h],
-  format: "rgba16float",
+  format: "rgba8unorm",
   // TODO(@darzu): support anti-aliasing again
 });
 
