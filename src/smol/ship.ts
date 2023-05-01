@@ -156,7 +156,7 @@ export async function createShip(em: EntityManager) {
   // EM.ensureComponentOn(gizmo, PhysicsParentDef, ent.id);
   // EM.ensureComponentOn(gizmo, RenderableConstructDef, res.assets.gizmo.proto);
 
-  addGizmoChild(ent, 10);
+  // addGizmoChild(ent, 10);
 
   //  [{ min: V(-13.8, 4.0, -2.9), max: V(-5.8, 6.0, -0.9) }];
 

@@ -54,7 +54,8 @@ export function constructNetTurret(
   cameraYawFactor: number = 0,
   cameraFollowOffset: vec3 = CAMERA_OFFSETS.thirdPersonOverShoulder,
   keyboardControls: boolean = false,
-  keyboardSpeed: number = 1
+  keyboardSpeed: number = 1,
+  yawRange: number = Math.PI
 ): asserts e is EntityW<
   [
     typeof TurretDef,
@@ -68,8 +69,8 @@ export function constructNetTurret(
   e.yawpitch.yaw = startYaw;
   e.yawpitch.pitch = startPitch;
   EM.ensureComponentOn(e, TurretDef);
-  e.turret.minYaw += startYaw;
-  e.turret.maxYaw += startYaw;
+  e.turret.minYaw = startYaw - yawRange / 2;
+  e.turret.maxYaw = startYaw + yawRange / 2;
   e.turret.cameraYawOffset = cameraYawOffset;
   e.turret.cameraPitchOffset = cameraPitchOffset;
   e.turret.cameraYawFactor = cameraYawFactor;

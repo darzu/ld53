@@ -62,7 +62,14 @@ export const { CannonPropsDef, CannonLocalDef, createCannon, createCannonNow } =
         e,
         props.yaw,
         props.pitch,
-        res.assets.ld51_cannon.aabb
+        res.assets.ld51_cannon.aabb,
+        0,
+        undefined,
+        undefined,
+        undefined,
+        true,
+        1.0,
+        Math.PI / 4
       );
       em.ensureComponentOn(e, ColorDef, V(0, 0, 0));
       em.ensureComponentOn(
