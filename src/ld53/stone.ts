@@ -3,9 +3,9 @@ import { ColorDef } from "../color-ecs.js";
 import { ENDESGA16 } from "../color/palettes.js";
 import { DeadDef } from "../delete.js";
 import { createRef, Ref } from "../em_helpers.js";
-import { EM, Entity, EntityW } from "../entity-manager.js";
+import { Component, EM, Entity, EntityW } from "../entity-manager.js";
 import { createEntityPool } from "../entity-pool.js";
-import { BulletDef, fireBullet } from "../games/bullet.js";
+import { Bullet, BulletDef, fireBullet } from "../games/bullet.js";
 import { PartyDef } from "../games/party.js";
 import { Path } from "../games/shipyard.js";
 import { jitter } from "../math.js";
@@ -221,19 +221,19 @@ function knockOutBricks(tower: Tower, aabb: AABB, shrink = false): number {
 function knockOutBricksByBullet(
   tower: Tower,
   aabb: AABB,
-  health: number
-): [number, number] {
+  bullet: Bullet
+): number {
   // [bricks knocked out, updated health]
   let bricksKnockedOut = 0;
-  outer: for (let row of tower.rows) {
+  for (let row of tower.rows) {
     if (doesOverlapAABB(row.aabb, aabb)) {
       for (let brick of row.bricks) {
-        if (health <= 0) {
-          break outer;
+        if (bullet.health <= 0) {
+          return bricksKnockedOut;
         }
         if (doesOverlapAABB(brick.aabb, aabb)) {
-          const dmg = Math.min(brick.health, health) + 0.001;
-          health -= dmg;
+          const dmg = Math.min(brick.health, bullet.health) + 0.001;
+          bullet.health -= dmg;
           brick.health -= dmg;
           if (brick.health <= 0) {
             knockOutBrickAtIndex(tower, brick.index);
@@ -246,7 +246,7 @@ function knockOutBricksByBullet(
       }
     }
   }
-  return [bricksKnockedOut, health];
+  return bricksKnockedOut;
 }
 
 function restoreBrick(tower: Tower, brick: Brick) {
@@ -380,6 +380,7 @@ export const towerPool = createEntityPool<
     }
 
     let rotation = 0;
+    let towerAABB = createAABB();
     for (let r = 0; r < rows; r++) {
       const row: TowerRow = { aabb: createAABB(), bricks: [] };
       tower.stoneTower.rows.push(row);
@@ -408,9 +409,32 @@ export const towerPool = createEntityPool<
           mat4.rotateY(cursor, angle, cursor);
         }
       }
+      mergeAABBs(towerAABB, towerAABB, row.aabb);
     }
     //mesh.quad.forEach(() => mesh.colors.push(V(0, 0, 0)));
+    mesh.quad.forEach((_, i) => mesh.surfaceIds.push(i + 1));
+    const windowHeight = 0.7 * height;
+    const windowAABB: AABB = {
+      min: V(
+        baseRadius - 4 * brickDepth,
+        windowHeight - 2 * brickHeight,
+        -approxBrickWidth
+      ),
+      max: V(
+        baseRadius + 2 * brickDepth,
+        windowHeight + 2 * brickHeight,
+        approxBrickWidth
+      ),
+    };
+    knockOutBricks(tower.stoneTower, windowAABB, true);
+    EM.ensureComponentOn(tower, ColliderDef, {
+      shape: "AABB",
+      solid: true,
+      aabb: towerAABB,
+    });
+
     EM.ensureComponentOn(tower, RenderableConstructDef, mesh);
+    EM.ensureComponentOn(tower, ColorDef, ENDESGA16.lightGray);
     return tower;
   },
   onSpawn: async (p) => {
@@ -683,15 +707,22 @@ EM.registerSystem(
           })
           .map((b) => b!);
         const invertedTransform = mat4.invert(tower.world.transform);
+        let totalKnockedOut = 0;
         for (let ball of balls) {
           assert(ball.collider.shape === "AABB");
           copyAABB(ballAABB, ball.collider.aabb);
           transformAABB(ballAABB, ball.world.transform);
           transformAABB(ballAABB, invertedTransform);
-          const knockedOut = knockOutBricksByBullet(
+          totalKnockedOut += knockOutBricksByBullet(
             tower.stoneTower,
             ballAABB,
-            ball.bullet.health
+            ball.bullet
+          );
+        }
+        if (totalKnockedOut) {
+          res.renderer.renderer.stdPool.updateMeshVertices(
+            tower.renderable.meshHandle,
+            tower.stoneTower.mesh
           );
         }
       }

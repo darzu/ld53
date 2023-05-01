@@ -102,6 +102,7 @@ import {
   WoodAssetsDef,
   WoodStateDef,
 } from "../wood.js";
+import { MapPaths } from "../smol/map-loader.js";
 /*
 NOTES:
 - Cut grass by updating a texture that has cut/not cut or maybe cut-height
@@ -225,7 +226,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   em.requireSystem("detectGameEnd");
 
   // start map
-  await setMap(em, "medium1");
+  await setMap(em, MapPaths[0]);
 
   resetLand();
 
@@ -606,6 +607,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   }
 
   EM.requireSystem("stoneTowerAttack");
+  EM.requireSystem("stoneTowerDamage");
 
   EM.requireSystem("landShipCollision");
 
