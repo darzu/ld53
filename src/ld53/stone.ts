@@ -434,7 +434,7 @@ export const towerPool = createEntityPool<
     });
 
     EM.ensureComponentOn(tower, RenderableConstructDef, mesh);
-    EM.ensureComponentOn(tower, ColorDef, ENDESGA16.lightGray);
+    EM.ensureComponentOn(tower, ColorDef, ENDESGA16.darkGray);
     return tower;
   },
   onSpawn: async (p) => {
