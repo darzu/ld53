@@ -1,3 +1,4 @@
+import { CanvasDef } from "../canvas.js";
 import { createRef } from "../em_helpers.js";
 import { EM } from "../entity-manager.js";
 import { PartyDef } from "../games/party.js";
@@ -30,15 +31,18 @@ export const ScoreDef = EM.defineComponent("score", () => ({
 
 EM.registerSystem(
   [ShipHealthDef],
-  [ScoreDef, TextDef],
+  [ScoreDef, TextDef, CanvasDef],
   (es, res) => {
     const ship = es[0];
     if (!ship) return;
     if (!res.score.gameEnding && !res.score.levelEnding) {
-      // TODO(@darzu): re-IMPL
-      res.text.upperText = `health: ${(ship.shipHealth.health * 100).toFixed(
-        0
-      )}`;
+      if (!res.htmlCanvas.hasMouseLock()) {
+        res.text.upperText = `CLICK TO START`;
+      } else {
+        res.text.upperText = `health: ${(ship.shipHealth.health * 100).toFixed(
+          0
+        )}`;
+      }
     }
   },
   "updateScoreDisplay"
