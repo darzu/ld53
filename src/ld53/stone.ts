@@ -46,6 +46,7 @@ import { assert } from "../util.js";
 import { vec3Dbg } from "../utils-3d.js";
 
 const GRAVITY = 6.0 * 0.00001;
+const MIN_BRICK_PERCENT = 0.6;
 
 interface Brick {
   aabb: AABB;
@@ -71,6 +72,9 @@ interface Tower {
   fireRate: number;
   projectileSpeed: number;
   firingRadius: number;
+  totalBricks: number;
+  currentBricks: number;
+  alive: boolean;
 }
 
 export const StoneTowerDef = EM.defineComponent(
@@ -102,6 +106,9 @@ export const StoneTowerDef = EM.defineComponent(
       fireRate,
       projectileSpeed,
       firingRadius,
+      totalBricks: 0,
+      currentBricks: 0,
+      alive: true,
     } as Tower)
 );
 
@@ -238,21 +245,20 @@ function knockOutBricksByBullet(
         if (bullet.health <= 0) {
           return bricksKnockedOut;
         }
-        if (doesOverlapAABB(brick.aabb, aabb)) {
+        if (doesOverlapAABB(brick.aabb, aabb) && !brick.knockedOut) {
           const dmg = Math.min(brick.health, bullet.health) + 0.001;
           bullet.health -= dmg;
           brick.health -= dmg;
           if (brick.health <= 0) {
             knockOutBrickAtIndex(tower.stoneTower, brick.index);
-            if (!brick.knockedOut) {
-              brick.knockedOut = true;
-              bricksKnockedOut++;
-              flyingBrickPool.spawn().then((flyingBrick) => {
-                flyingBrick.physicsParent.id = tower.id;
-                vec3.copy(flyingBrick.position, brick.pos[0]);
-                vec3.copy(flyingBrick.color, brick.color);
-              });
-            }
+            brick.knockedOut = true;
+            bricksKnockedOut++;
+            flyingBrickPool.spawn().then((flyingBrick) => {
+              flyingBrick.physicsParent.id = tower.id;
+              console.log(brick.pos[0]);
+              vec3.copy(flyingBrick.position, brick.pos[0]);
+              vec3.copy(flyingBrick.color, brick.color);
+            });
           }
         }
       }
@@ -261,22 +267,28 @@ function knockOutBricksByBullet(
   return bricksKnockedOut;
 }
 
-function restoreBrick(tower: Tower, brick: Brick) {
+function restoreBrick(tower: Tower, brick: Brick): boolean {
+  brick.health = startingBrickHealth;
   if (brick.knockedOut) {
     for (let i = 0; i < 8; i++) {
-      vec3.copy(tower.mesh.pos[brick.index + i], brick.pos[brick.index + i]);
+      vec3.copy(tower.mesh.pos[brick.index + i], brick.pos[i]);
     }
     brick.knockedOut = false;
+    return true;
   }
-  brick.health = startingBrickHealth;
+  return false;
 }
 
-function restoreAllBricks(tower: Tower) {
+function restoreAllBricks(tower: Tower): number {
+  let bricksRestored = 0;
   for (let row of tower.rows) {
     for (let brick of row.bricks) {
-      restoreBrick(tower, brick);
+      if (restoreBrick(tower, brick)) {
+        bricksRestored++;
+      }
     }
   }
+  return bricksRestored;
 }
 
 const maxStoneTowers = 10;
@@ -350,7 +362,7 @@ export const towerPool = createEntityPool<
       // base
       const pos: vec3[] = [];
       function addPos(p: vec3) {
-        pos.push(p);
+        pos.push(vec3.clone(p));
         mesh.pos.push(p);
         updateAABBWithPoint(aabb, p);
       }
@@ -397,6 +409,7 @@ export const towerPool = createEntityPool<
 
     let rotation = 0;
     let towerAABB = createAABB();
+    let totalBricks = 0;
     for (let r = 0; r < rows; r++) {
       const row: TowerRow = { aabb: createAABB(), bricks: [] };
       tower.stoneTower.rows.push(row);
@@ -411,6 +424,7 @@ export const towerPool = createEntityPool<
       mat4.translate(cursor, [0, 0, radius], cursor);
       mat4.rotateY(cursor, coolMode ? -angle / 2 : angle / 2, cursor);
       for (let i = 0; i < n; i++) {
+        totalBricks++;
         const brick = appendBrick(
           brickWidth,
           brickDepth + jitter(brickDepth / 10)
@@ -450,6 +464,8 @@ export const towerPool = createEntityPool<
     });
 
     EM.ensureComponentOn(tower, RenderableConstructDef, mesh);
+    tower.stoneTower.totalBricks = totalBricks;
+    tower.stoneTower.currentBricks = totalBricks;
     return tower;
   },
   onSpawn: async (p) => {
@@ -464,7 +480,17 @@ export const towerPool = createEntityPool<
     // platform.towerPlatform.tiltPeriod = tiltPeriod;
     // platform.towerPlatform.tiltTimer = tiltTimer;
     p.stoneTower.lastFired = 0;
-    restoreAllBricks(p.stoneTower);
+    if (restoreAllBricks(p.stoneTower)) {
+      const res = await EM.whenResources(RendererDef);
+      const meshHandle = (await EM.whenEntityHas(p, RenderableDef)).renderable
+        .meshHandle;
+      res.renderer.renderer.stdPool.updateMeshVertices(
+        meshHandle,
+        p.stoneTower.mesh
+      );
+    }
+    p.stoneTower.currentBricks = p.stoneTower.totalBricks;
+    p.stoneTower.alive = true;
   },
   onDespawn: (e) => {
     // tower
@@ -491,6 +517,8 @@ export async function spawnStoneTower() {
 
 export const FlyingBrickDef = EM.defineComponent("flyingBrick", () => true);
 
+const maxFlyingBricks = 50;
+
 export const flyingBrickPool = createEntityPool<
   [
     typeof FlyingBrickDef,
@@ -503,7 +531,7 @@ export const flyingBrickPool = createEntityPool<
     typeof PhysicsParentDef
   ]
 >({
-  max: 50,
+  max: maxFlyingBricks,
   maxBehavior: "rand-despawn",
   create: async () => {
     const res = await EM.whenResources(AssetsDef);
@@ -520,7 +548,7 @@ export const flyingBrickPool = createEntityPool<
     EM.ensureComponentOn(
       brick,
       ScaleDef,
-      V(approxBrickWidth, approxBrickHeight, brickDepth)
+      V(approxBrickWidth / 2, approxBrickHeight / 2, brickDepth / 2)
     );
     EM.ensureComponentOn(brick, PhysicsParentDef);
     return brick;
@@ -541,14 +569,14 @@ export const flyingBrickPool = createEntityPool<
       Math.random() - 0.5,
       e.angularVelocity
     );
-    vec3.scale(e.angularVelocity, 0.1, e.angularVelocity);
+    vec3.scale(e.angularVelocity, 0.01, e.angularVelocity);
     vec3.set(
       Math.random() - 0.5,
       Math.random() - 0.5,
       Math.random() - 0.5,
       e.linearVelocity
     );
-    vec3.scale(e.linearVelocity, 0.1, e.angularVelocity);
+    vec3.scale(e.linearVelocity, 0.1, e.linearVelocity);
 
     e.lifetime.startMs = 8000;
     e.lifetime.ms = e.lifetime.startMs;
@@ -566,6 +594,7 @@ EM.registerSystem(
   (es, _) =>
     es.forEach((e) => {
       if (!e.dead.processed) {
+        console.log("despawning brick");
         flyingBrickPool.despawn(e);
       }
     }),
@@ -595,6 +624,7 @@ EM.registerSystem(
     if (!res.party.pos) return;
 
     for (let tower of es) {
+      if (!tower.stoneTower.alive) return;
       const invertedTransform = mat4.invert(tower.world.transform);
       const towerSpacePos = vec3.transformMat4(
         res.party.pos,
@@ -788,6 +818,38 @@ EM.registerSystem(
   "stoneTowerAttack"
 );
 
+function destroyTower(
+  tower: EntityW<[typeof StoneTowerDef, typeof RenderableDef]>
+) {
+  let knockedOut = 0;
+  let i = 0;
+  while (knockedOut < maxFlyingBricks / 2 && i < 200) {
+    i++;
+    const rowIndex = Math.floor(Math.random() * tower.stoneTower.rows.length);
+    const brickIndex = Math.floor(
+      Math.random() * tower.stoneTower.rows[rowIndex].bricks.length
+    );
+    const brick = tower.stoneTower.rows[rowIndex].bricks[brickIndex];
+    if (!brick.knockedOut) {
+      knockedOut++;
+      knockOutBrickAtIndex(tower.stoneTower, brick.index);
+      brick.knockedOut = true;
+      flyingBrickPool.spawn().then((flyingBrick) => {
+        flyingBrick.physicsParent.id = tower.id;
+        vec3.copy(flyingBrick.position, brick.pos[0]);
+        vec3.copy(flyingBrick.color, brick.color);
+        vec3.set(0, 0.01, 0, flyingBrick.linearVelocity);
+      });
+    }
+  }
+  tower.renderable.hidden = true;
+  tower.stoneTower.alive = false;
+  const cannon = tower.stoneTower.cannon()!;
+  EM.whenEntityHas(cannon, RenderableDef).then(
+    (c) => (c.renderable.hidden = true)
+  );
+}
+
 EM.registerSystem(
   [StoneTowerDef, RenderableDef, WorldFrameDef],
   [PhysicsResultsDef, RendererDef],
@@ -818,6 +880,13 @@ EM.registerSystem(
           );
         }
         if (totalKnockedOut) {
+          tower.stoneTower.currentBricks -= totalKnockedOut;
+          if (
+            tower.stoneTower.currentBricks / tower.stoneTower.totalBricks <
+            MIN_BRICK_PERCENT
+          ) {
+            destroyTower(tower);
+          }
           res.renderer.renderer.stdPool.updateMeshVertices(
             tower.renderable.meshHandle,
             tower.stoneTower.mesh
