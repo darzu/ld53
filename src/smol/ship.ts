@@ -267,7 +267,10 @@ async function createRudder(em: EntityManager) {
     1.6,
     // V(0, 20, 50),
     V(0, 10, 30),
-    true
+    true,
+    1,
+    Math.PI,
+    "W/S: unfurl/furl, A/D: turn, E: drop rudder"
   );
 
   ent.turret.maxPitch = 0;

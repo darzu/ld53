@@ -69,7 +69,8 @@ export const { CannonPropsDef, CannonLocalDef, createCannon, createCannonNow } =
         undefined,
         true,
         1.0,
-        Math.PI / 4
+        Math.PI / 4,
+        "W/S: pitch, A/D: turn, left click: fire"
       );
       em.ensureComponentOn(e, ColorDef, V(0, 0, 0));
       em.ensureComponentOn(
