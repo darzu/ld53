@@ -18,7 +18,7 @@ import { DeletedDef } from "../delete.js";
 import { defineNetEntityHelper } from "../em_helpers.js";
 import { constructNetTurret, TurretDef } from "./turret.js";
 
-export const { CannonPropsDef, CannonLocalDef, createCannon } =
+export const { CannonPropsDef, CannonLocalDef, createCannon, createCannonNow } =
   defineNetEntityHelper(EM, {
     name: "cannon",
     defaultProps: (
@@ -57,16 +57,26 @@ export const { CannonPropsDef, CannonLocalDef, createCannon } =
     build: (e, res) => {
       const em: EntityManager = EM;
       const props = e.cannonProps;
-      em.ensureComponent(e.id, PositionDef, props.location);
-      constructNetTurret(e, props.yaw, props.pitch, res.assets.cannon.aabb);
-      em.ensureComponent(e.id, ColorDef, V(0, 0, 0));
-      em.ensureComponent(e.id, RenderableConstructDef, res.assets.cannon.mesh);
-      em.ensureComponent(e.id, ColliderDef, {
+      em.ensureComponentOn(e, PositionDef, props.location);
+      constructNetTurret(
+        e,
+        props.yaw,
+        props.pitch,
+        res.assets.ld51_cannon.aabb
+      );
+      em.ensureComponentOn(e, ColorDef, V(0, 0, 0));
+      em.ensureComponentOn(
+        e,
+        RenderableConstructDef,
+        res.assets.ld51_cannon.mesh
+      );
+      em.ensureComponentOn(e, ColliderDef, {
         shape: "AABB",
         solid: true,
         aabb: res.assets.cannon.aabb,
       });
       em.ensureComponentOn(e, PhysicsParentDef, props.parentId);
+      return e;
     },
   });
 
@@ -97,7 +107,21 @@ export function registerCannonSystems(em: EntityManager) {
         vec3.transformQuat(firePos, fireDir, firePos);
         vec3.add(firePos, cannon.world.position, firePos);
         // TODO(@darzu): MULTIPLAYER BULLETS broken b/c LD51
-        // fireBullet(EM, 1, firePos, fireDir, 0.1);
+        // console.log("fire-cannon");
+        const v = 0.2;
+        const g = 6.0 * 0.00001;
+        const b = fireBullet(
+          EM,
+          2,
+          firePos,
+          fireDir,
+          v,
+          0.02,
+          g,
+          // 2.0,
+          20.0,
+          [0, 0, -1]
+        );
       }
 
       // but everyone resets the cooldown and plays sound effects

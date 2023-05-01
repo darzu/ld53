@@ -34,11 +34,32 @@ import { getAABBFromMesh, transformMesh } from "../render/mesh.js";
 import { createWoodHealth, WoodHealthDef, WoodStateDef } from "../wood.js";
 import { addGizmoChild } from "../utils-game.js";
 import { getSizeFromAABB } from "../physics/aabb.js";
+import {
+  CannonLocalDef,
+  createCannon,
+  createCannonNow,
+} from "../games/cannon.js";
 
 export const ShipDef = EM.defineComponent("ld52ship", () => ({
   mast: createRef(0, [MastDef, RotationDef]),
   rudder: createRef(0, [
     RudderDef,
+    YawPitchDef,
+    TurretDef,
+    // CameraFollowDef,
+    AuthorityDef,
+    PositionDef,
+  ]),
+  cannonR: createRef(0, [
+    CannonLocalDef,
+    YawPitchDef,
+    TurretDef,
+    // CameraFollowDef,
+    AuthorityDef,
+    PositionDef,
+  ]),
+  cannonL: createRef(0, [
+    CannonLocalDef,
     YawPitchDef,
     TurretDef,
     // CameraFollowDef,
@@ -55,8 +76,10 @@ const VELOCITY_DRAG = 30.0; // squared drag factor
 const SAIL_ACCEL_RATE = 0.001;
 const RUDDER_ROTATION_RATE = 0.01;
 
+export const cannonDefaultPitch = Math.PI * +0.05;
+
 export async function createShip(em: EntityManager) {
-  const res = await em.whenResources(AssetsDef);
+  const res = await em.whenResources(AssetsDef, MeDef);
   const ent = em.new();
   em.ensureComponentOn(ent, ShipDef);
 
@@ -134,6 +157,28 @@ export async function createShip(em: EntityManager) {
   // EM.ensureComponentOn(gizmo, RenderableConstructDef, res.assets.gizmo.proto);
 
   addGizmoChild(ent, 10);
+
+  //  [{ min: V(-13.8, 4.0, -2.9), max: V(-5.8, 6.0, -0.9) }];
+
+  // create cannons
+  const cannonR = createCannonNow(
+    res,
+    V(-8, 4.7, -7),
+    Math.PI * 0.5,
+    cannonDefaultPitch,
+    ent.id
+  );
+  vec3.copy(cannonR.color, ENDESGA16.darkGray);
+  ent.ld52ship.cannonR = createRef(cannonR);
+  const cannonL = createCannonNow(
+    res,
+    V(8, 4.7, -7),
+    Math.PI * 1.5,
+    cannonDefaultPitch,
+    ent.id
+  );
+  vec3.copy(cannonL.color, ENDESGA16.darkGray);
+  ent.ld52ship.cannonL = createRef(cannonL);
 
   return ent;
 }

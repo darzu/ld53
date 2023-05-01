@@ -86,7 +86,7 @@ import { ScoreDef } from "../smol/score.js";
 import { LandMapTexPtr, LevelMapDef, setMap } from "../smol/level-map.js";
 import { GrassCutTexPtr, grassPoolPtr } from "../smol/std-grass.js";
 import { setWindAngle, WindDef } from "../smol/wind.js";
-import { createShip, ShipDef } from "../smol/ship.js";
+import { cannonDefaultPitch, createShip, ShipDef } from "../smol/ship.js";
 import { SAIL_FURL_RATE } from "../smol/sail.js";
 import { spawnStoneTower, StoneTowerDef, towerPool } from "./stone.js";
 import { LandDef } from "./land-ship.js";
@@ -427,6 +427,11 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
       Math.atan2(-level.levelMap.windDir[0], -level.levelMap.windDir[1]) +
         Math.PI / 2
     );
+
+    ship.ld52ship.cannonR()!.yawpitch.pitch = cannonDefaultPitch;
+    ship.ld52ship.cannonR()!.yawpitch.yaw = Math.PI * 0.5;
+    ship.ld52ship.cannonL()!.yawpitch.pitch = cannonDefaultPitch;
+    ship.ld52ship.cannonL()!.yawpitch.yaw = Math.PI * 1.5;
 
     resetWoodHealth(ship.woodHealth);
     ship.shipHealth.health = 1;
