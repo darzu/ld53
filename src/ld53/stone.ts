@@ -894,9 +894,16 @@ EM.registerSystem(
         }
         if (totalKnockedOut) {
           tower.stoneTower.currentBricks -= totalKnockedOut;
-          for (let row of tower.stoneTower.rows) {
-            if (row.bricksKnockedOut === row.totalBricks) {
-              destroyTower(tower);
+          if (
+            tower.stoneTower.currentBricks / tower.stoneTower.totalBricks <
+            MIN_BRICK_PERCENT
+          ) {
+            destroyTower(tower);
+          } else {
+            for (let row of tower.stoneTower.rows) {
+              if (row.bricksKnockedOut === row.totalBricks) {
+                destroyTower(tower);
+              }
             }
           }
           res.renderer.renderer.stdPool.updateMeshVertices(
