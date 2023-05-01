@@ -14,7 +14,7 @@ import { setSimulationAlpha } from "./render/renderer-ecs.js";
 import { never } from "./util.js";
 // import { initHyperspaceGame } from "./game/game-hyperspace.js";
 import { DBG_ASSERT, ENABLE_NET, VERBOSE_LOG } from "./flags.js";
-import { initRogueGame } from "./games/game-rogue.js";
+import { initShipyardGame } from "./games/game-shipyard.js";
 import { gameplaySystems } from "./games/ghost.js";
 import { initFontEditor } from "./games/game-font.js";
 import { initGJKSandbox } from "./games/game-gjk.js";
@@ -35,7 +35,7 @@ const AUTOSTART = true;
 const ALL_GAMES = [
   "gjk",
   "rebound", // broken-ish
-  "rogue",
+  "shipyard",
   "smol",
   "font",
   "hyperspace",
@@ -45,7 +45,7 @@ const ALL_GAMES = [
   "modeling",
   "ld53",
 ] as const;
-const GAME: (typeof ALL_GAMES)[number] = "ld53";
+const GAME: (typeof ALL_GAMES)[number] = "shipyard";
 
 // Run simulation with a fixed timestep @ 60hz
 const TIMESTEP = 1000 / 60;
@@ -133,11 +133,6 @@ function legacyRequireAllTheSystems() {
     EM.requireSystem("debugLoop");
     // EM.callSystem("initWooden");
     EM.requireSystem("runWooden");
-  }
-  if (GAME === "rogue") {
-    // EM.callSystem("initWooden");
-    EM.requireSystem("runWooden");
-    EM.requireSystem("woodHealth");
   }
   EM.requireSystem("updateBullets");
   EM.requireSystem("applyGravity");
@@ -277,7 +272,7 @@ async function startGame(localPeerName: string, host: string | null) {
   else if (GAME === "cloth") initClothSandbox(EM, hosting);
   else if (GAME === "hyperspace") initHyperspaceGame(EM);
   else if (GAME === "cube") initCubeGame(EM);
-  else if (GAME === "rogue") initRogueGame(EM, hosting);
+  else if (GAME === "shipyard") initShipyardGame(EM, hosting);
   else if (GAME === "font") initFontEditor(EM);
   else if (GAME === "smol") initSmol(EM, hosting);
   else if (GAME === "ld53") initLD53(EM, hosting);

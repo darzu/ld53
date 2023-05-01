@@ -96,6 +96,7 @@ import {
 } from "./pirate.js";
 import { ParametricDef } from "./parametric-motion.js";
 import { addGizmoChild } from "../utils-game.js";
+import { createBarrelMesh } from "./barrel.js";
 
 /*
   Game mechanics:
@@ -151,7 +152,10 @@ export const LD51CannonDef = EM.defineComponent("ld51Cannon", () => {
   return {};
 });
 
-export async function initRogueGame(em: EntityManager, hosting: boolean) {
+export async function initShipyardGame(em: EntityManager, hosting: boolean) {
+  EM.requireSystem("runWooden");
+  EM.requireSystem("woodHealth");
+
   const res = await em.whenResources(
     AssetsDef,
     // WoodAssetsDef,
@@ -253,6 +257,7 @@ export async function initRogueGame(em: EntityManager, hosting: boolean) {
     floorLength,
     floorWidth,
   } = createHomeShip();
+  // const [timberMesh, timberState] = createBarrelMesh();
 
   em.ensureComponentOn(timber, RenderableConstructDef, timberMesh);
   em.ensureComponentOn(timber, WoodStateDef, timberState);
