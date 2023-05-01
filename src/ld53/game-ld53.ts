@@ -203,11 +203,11 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
       // renderer
       res.renderer.pipelines = [
         ...shadowPipelines,
-        stdRenderPipeline,
+        stdRenderPipeline, // SLOW
         // renderGrassPipe,
         renderOceanPipe,
-        outlineRender,
-        deferredPipeline,
+        outlineRender, // 2ms
+        deferredPipeline, // 10ms
         skyPipeline,
         postProcess,
         ...(res.dev.showConsole ? dbgGridCompose : []),
