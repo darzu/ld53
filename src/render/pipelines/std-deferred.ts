@@ -16,8 +16,8 @@ export const deferredPipeline = CY.createRenderPipeline("deferredRender", {
   globals: [
     { ptr: linearSamplerPtr, alias: "samp" },
     { ptr: outlinedTexturePtr, alias: "colorTex" },
-    { ptr: worldNormsAndFresTexPtr, alias: "normTex" },
-    { ptr: positionsTexturePtr, alias: "posTex" },
+    // { ptr: worldNormsAndFresTexPtr, alias: "normTex" },
+    // { ptr: positionsTexturePtr, alias: "posTex" },
     { ptr: surfacesTexturePtr, alias: "surfTex" },
     { ptr: mainDepthTex, alias: "depthTex" },
     { ptr: shadowDepthTextures, alias: "shadowMap" },

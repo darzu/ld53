@@ -69,10 +69,10 @@ fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
   var color = textureSample(colorTex, samp, uv).rgb;
   let alpha = 1.0;
   // TODO(@darzu): std-ocean and std-mesh store and use normal differently
-  let normalAndFresnel = textureSample(normTex, samp, uv);
-  let normal = normalAndFresnel.xyz;
-  let hasFresnel = normalAndFresnel.w;
-  let worldPos = textureSample(posTex, samp, uv).xyz;
+  // let normalAndFresnel = textureSample(normTex, samp, uv);
+  // let normal = normalAndFresnel.xyz;
+  // let hasFresnel = normalAndFresnel.w;
+  // let worldPos = textureSample(posTex, samp, uv).xyz;
 
   // read gerstner directly for normal:
   // let gerst = gerstner(worldPos.zx, scene.time);
@@ -87,47 +87,47 @@ fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
   // TODO(@darzu): Parameterize materials!! They shouldn't all use the same fresnel params..
   const fresnelColor = vec3(0.02,0.81,0.91);
   // TODO(@darzu): clean up fresnel
-  const f0 = 0.02;
-      let light = pointLights.ms[0];
-      let toLight_ = light.position - worldPos;
-      let lightDist = length(toLight_);
-      let toLight = toLight_ / lightDist;
-      let toCamera = scene.cameraPos - worldPos;
-      let attenuation = 1.0 / (light.constant + light.linear * lightDist +
-                                light.quadratic * lightDist * lightDist);
-      let lightAng = clamp(dot(toLight, normal), 0.0, 1.0);
-      let halfway = normalize(toLight + normal); // TODO(@darzu): use?!
-      let cameraAng = clamp(dot(normalize(toCamera), normal), 0.0, 1.0);
+  // const f0 = 0.02;
+  //     let light = pointLights.ms[0];
+  //     let toLight_ = light.position - worldPos;
+  //     let lightDist = length(toLight_);
+  //     let toLight = toLight_ / lightDist;
+  //     let toCamera = scene.cameraPos - worldPos;
+  //     let attenuation = 1.0 / (light.constant + light.linear * lightDist +
+  //                               light.quadratic * lightDist * lightDist);
+  //     let lightAng = clamp(dot(toLight, normal), 0.0, 1.0);
+  //     let halfway = normalize(toLight + normal); // TODO(@darzu): use?!
+  //     let cameraAng = clamp(dot(normalize(toCamera), normal), 0.0, 1.0);
 
-      let shadowFull = (scene.cameraViewProjMatrix * vec4(worldPos, 1.0));
-      let shadowFullZ = shadowFull.z / shadowFull.w;
+  //     let shadowFull = (scene.cameraViewProjMatrix * vec4(worldPos, 1.0));
+  //     let shadowFullZ = shadowFull.z / shadowFull.w;
 
-      // TODO(@darzu): DBG: try outputing depth from camera as result?
-      var cascadeIdx = 0u;
-      var viewProj = pointLights.ms[0].viewProj0;
-      if (shadowFullZ > light.depth0) {
-        cascadeIdx = 1u;
-        viewProj = pointLights.ms[0].viewProj1;
-      }
+  //     // TODO(@darzu): DBG: try outputing depth from camera as result?
+  //     var cascadeIdx = 0u;
+  //     var viewProj = pointLights.ms[0].viewProj0;
+  //     if (shadowFullZ > light.depth0) {
+  //       cascadeIdx = 1u;
+  //       viewProj = pointLights.ms[0].viewProj1;
+  //     }
 
-      // XY is in (-1, 1) space, Z is in (0, 1) space
-      let posFromLight = (viewProj * vec4(worldPos, 1.0)).xyz;
+  //     // XY is in (-1, 1) space, Z is in (0, 1) space
+  //     let posFromLight = (viewProj * vec4(worldPos, 1.0)).xyz;
       
-      // Convert XY to (0, 1), Y is flipped because texture coords are Y-down.
-      let shadowPos = vec3<f32>(posFromLight.xy * vec2<f32>(0.5, -0.5) + vec2<f32>(0.5, 0.5),
-                                posFromLight.z
-                                );
+  //     // Convert XY to (0, 1), Y is flipped because texture coords are Y-down.
+  //     let shadowPos = vec3<f32>(posFromLight.xy * vec2<f32>(0.5, -0.5) + vec2<f32>(0.5, 0.5),
+  //                               posFromLight.z
+  //                               );
 
-      let shadowVis = getShadowVis(shadowPos, normal, toLight, cascadeIdx);
+  //     let shadowVis = getShadowVis(shadowPos, normal, toLight, cascadeIdx);
 
-      lightingIntensity += (light.ambient.r * attenuation) 
-        + (light.diffuse.r * lightAng * attenuation * shadowVis);
+  //     lightingIntensity += (light.ambient.r * attenuation) 
+  //       + (light.diffuse.r * lightAng * attenuation * shadowVis);
 
-      // Fresnel-Schlick ?
-      fresnelIntensity += f0 + (1.0 - f0) * pow(1.0 - cameraAng, 5.0);
+  //     // Fresnel-Schlick ?
+  //     fresnelIntensity += f0 + (1.0 - f0) * pow(1.0 - cameraAng, 5.0);
 
   // HACK: disables fresnel
-  fresnelIntensity *= hasFresnel;
+  // fresnelIntensity *= hasFresnel;
 
   let litColor = mix(
     color * lightingIntensity, 
