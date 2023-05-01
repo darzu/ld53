@@ -298,7 +298,7 @@ export const litTexturePtr = CY.createTexture("litTexture", {
 export const worldNormsAndFresTexPtr = CY.createTexture("worldNormsTex", {
   size: [100, 100],
   onCanvasResize: (w, h) => [w, h],
-  format: "rgba8unorm",
+  format: "rgba16float",
   // TODO(@darzu): support anti-aliasing again
 });
 
