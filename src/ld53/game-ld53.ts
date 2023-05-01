@@ -260,7 +260,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   // em.ensureComponentOn(sky, ColorDef, V(0.9, 0.9, 0.9));
 
   // ocean
-  const oceanVertsPerWorldUnit = 0.25;
+  const oceanVertsPerWorldUnit = 0.02;
   const worldUnitPerOceanVerts = 1 / oceanVertsPerWorldUnit;
   const oceanZCount = Math.floor(WORLD_WIDTH * oceanVertsPerWorldUnit);
   const oceanXCount = Math.floor(WORLD_HEIGHT * oceanVertsPerWorldUnit);
@@ -807,9 +807,11 @@ async function resetLand() {
   if (!terraMesh) {
     terraMesh = createFlatQuadMesh(terraZCount, terraXCount);
 
+    // TODO(@darzu): seperate chunks of land
+
     // console.log(`heightmap minY: ${minY}`);
     const hm = EM.new();
-    // EM.ensureComponentOn(hm, RenderableConstructDef, terraMesh);
+    EM.ensureComponentOn(hm, RenderableConstructDef, terraMesh);
     EM.ensureComponentOn(hm, PositionDef);
     // TODO(@darzu): maybe do a sable-like gradient accross the terrain, based on view dist or just uv?
     // EM.ensureComponentOn(hm, ColorDef, V(0.4, 0.2, 0.2));
