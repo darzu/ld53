@@ -5,7 +5,9 @@ import { TextDef } from "../games/ui.js";
 import { ShipHealthDef } from "../ld53/ship-health.js";
 import { createAABB, pointInAABB } from "../physics/aabb.js";
 import { PhysicsStateDef } from "../physics/nonintersection.js";
+import { PhysicsParentDef } from "../physics/transform.js";
 import { TimeDef } from "../time.js";
+import { WoodHealthDef } from "../wood.js";
 import { setMap } from "./level-map.js";
 import { MapPaths } from "./map-loader.js";
 import { ShipDef } from "./ship.js";
@@ -97,6 +99,16 @@ EM.registerSystem(
         res.score.levelEnding = true;
         res.score.levelEndedAt = res.time.step;
         res.text.upperText = "LEVEL COMPLETE";
+      }
+
+      // splinter the dock
+      const dock = res.score.endZone()!;
+      if (WoodHealthDef.isOn(dock)) {
+        for (let b of dock.woodHealth.boards) {
+          for (let s of b) {
+            s.health = 0;
+          }
+        }
       }
     }
   },
