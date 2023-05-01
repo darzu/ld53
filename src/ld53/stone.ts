@@ -62,6 +62,9 @@ interface Brick {
 interface TowerRow {
   aabb: AABB;
   bricks: Array<Brick>;
+  // excludes "shrunk" bricks--hacky
+  totalBricks: number;
+  bricksKnockedOut: number;
 }
 
 interface Tower {
@@ -215,6 +218,7 @@ function knockOutBricks(tower: Tower, aabb: AABB, shrink = false): number {
         if (doesOverlapAABB(brick.aabb, aabb)) {
           if (shrink) {
             if (!shrinkBrickAtIndex(tower, brick.index, aabb)) {
+              row.totalBricks--;
               knockOutBrickAtIndex(tower, brick.index);
             }
           } else {
@@ -222,6 +226,7 @@ function knockOutBricks(tower: Tower, aabb: AABB, shrink = false): number {
             if (!brick.knockedOut) {
               brick.knockedOut = true;
               bricksKnockedOut++;
+              row.bricksKnockedOut++;
             }
           }
         }
@@ -250,6 +255,7 @@ function knockOutBricksByBullet(
           bullet.health -= dmg;
           brick.health -= dmg;
           if (brick.health <= 0) {
+            row.bricksKnockedOut++;
             knockOutBrickAtIndex(tower.stoneTower, brick.index);
             brick.knockedOut = true;
             bricksKnockedOut++;
@@ -282,6 +288,7 @@ function restoreBrick(tower: Tower, brick: Brick): boolean {
 function restoreAllBricks(tower: Tower): number {
   let bricksRestored = 0;
   for (let row of tower.rows) {
+    row.bricksKnockedOut = 0;
     for (let brick of row.bricks) {
       if (restoreBrick(tower, brick)) {
         bricksRestored++;
@@ -411,7 +418,12 @@ export const towerPool = createEntityPool<
     let towerAABB = createAABB();
     let totalBricks = 0;
     for (let r = 0; r < rows; r++) {
-      const row: TowerRow = { aabb: createAABB(), bricks: [] };
+      const row: TowerRow = {
+        aabb: createAABB(),
+        bricks: [],
+        totalBricks: 0,
+        bricksKnockedOut: 0,
+      };
       tower.stoneTower.rows.push(row);
       const radius = baseRadius * (1 - r / (rows * 2));
       const [n, brickWidth] = calculateNAndBrickWidth(radius, approxBrickWidth);
@@ -425,6 +437,7 @@ export const towerPool = createEntityPool<
       mat4.rotateY(cursor, coolMode ? -angle / 2 : angle / 2, cursor);
       for (let i = 0; i < n; i++) {
         totalBricks++;
+        row.totalBricks++;
         const brick = appendBrick(
           brickWidth,
           brickDepth + jitter(brickDepth / 10)
@@ -881,11 +894,10 @@ EM.registerSystem(
         }
         if (totalKnockedOut) {
           tower.stoneTower.currentBricks -= totalKnockedOut;
-          if (
-            tower.stoneTower.currentBricks / tower.stoneTower.totalBricks <
-            MIN_BRICK_PERCENT
-          ) {
-            destroyTower(tower);
+          for (let row of tower.stoneTower.rows) {
+            if (row.bricksKnockedOut === row.totalBricks) {
+              destroyTower(tower);
+            }
           }
           res.renderer.renderer.stdPool.updateMeshVertices(
             tower.renderable.meshHandle,
