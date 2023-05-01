@@ -88,8 +88,7 @@ fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
   const fresnelColor = vec3(0.02,0.81,0.91);
   // TODO(@darzu): clean up fresnel
   const f0 = 0.02;
-  for (var i: u32 = 0u; i < scene.numPointLights; i++) {
-      let light = pointLights.ms[i];
+      let light = pointLights.ms[0];
       let toLight_ = light.position - worldPos;
       let lightDist = length(toLight_);
       let toLight = toLight_ / lightDist;
@@ -100,31 +99,15 @@ fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
       let halfway = normalize(toLight + normal); // TODO(@darzu): use?!
       let cameraAng = clamp(dot(normalize(toCamera), normal), 0.0, 1.0);
 
-      // TODO(@darzu): cascade selection is wrong
-      // TODO(@darzu): too much extra math?
-      // let shadowFullZ = (pointLights.ms[i].viewProjAll * vec4(worldPos, 1.0)).z;
       let shadowFull = (scene.cameraViewProjMatrix * vec4(worldPos, 1.0));
       let shadowFullZ = shadowFull.z / shadowFull.w;
-      // var r = shadowFullZ;
-      // var g = 0.0;
-      // if (shadowFullZ > 0.99) {
-      //   g = shadowFullZ;
-      //   r = 0.0;
-      // }
-      // // var b = shadowFull.w;
-      // var b = 0.0;
-      // // if (shadowFullZ > 0.95) {
-      // //   b = 1.0;
-      // //   g = 0.0;
-      // // }
-      // return vec4(r, g, b, alpha);
 
       // TODO(@darzu): DBG: try outputing depth from camera as result?
       var cascadeIdx = 0u;
-      var viewProj = pointLights.ms[i].viewProj0;
+      var viewProj = pointLights.ms[0].viewProj0;
       if (shadowFullZ > light.depth0) {
         cascadeIdx = 1u;
-        viewProj = pointLights.ms[i].viewProj1;
+        viewProj = pointLights.ms[0].viewProj1;
       }
 
       // XY is in (-1, 1) space, Z is in (0, 1) space
@@ -134,30 +117,17 @@ fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
       let shadowPos = vec3<f32>(posFromLight.xy * vec2<f32>(0.5, -0.5) + vec2<f32>(0.5, 0.5),
                                 posFromLight.z
                                 );
-      // return vec4(shadowPos, alpha);
 
       let shadowVis = getShadowVis(shadowPos, normal, toLight, cascadeIdx);
-      //lightingColor = lightingColor + clamp(abs((light.ambient * attenuation) + (light.diffuse * lightAng * attenuation * shadowVis)), vec3(0.0), vec3(1.0));
-      //lightingColor += light.ambient;
-      // lightingColor = lightingColor + f32(1u - isUnlit) 
-      //   * ((light.ambient * attenuation) + (light.diffuse * lightAng * attenuation * shadowVis));
+
       lightingIntensity += (light.ambient.r * attenuation) 
         + (light.diffuse.r * lightAng * attenuation * shadowVis);
 
-      // fresnelIntensity += (1.0 - cameraAng) * fresnelFactor;
       // Fresnel-Schlick ?
       fresnelIntensity += f0 + (1.0 - f0) * pow(1.0 - cameraAng, 5.0);
-  }
-  // TODO(@darzu): consider using this rim-lighting approach instead of this fersnel
-  //      https://lettier.github.io/3d-game-shaders-for-beginners/rim-lighting.html
 
   // HACK: disables fresnel
   fresnelIntensity *= hasFresnel;
-
-  // cel shading:
-  // TODO(@darzu): kinda hacky to have seperate bands for these?
-  // lightingIntensity = ceil(lightingIntensity * 10.0) / 10.0;
-  // fresnelIntensity = ceil(fresnelIntensity * 5.0) / 5.0;
 
   let litColor = mix(
     color * lightingIntensity, 
