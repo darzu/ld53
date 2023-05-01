@@ -630,6 +630,8 @@ async function chooseAndInitRenderer(
     if (!adapter) console.error("navigator.gpu?.requestAdapter() failed");
     if (adapter) {
       const supportsTimestamp = adapter.features.has("timestamp-query");
+      const supportsF16 = adapter.features.has("shader-f16");
+      console.log("supportsF16: " + supportsF16);
       if (!supportsTimestamp && VERBOSE_LOG)
         console.log(
           "GPU profiling disabled: device does not support timestamp queries"
