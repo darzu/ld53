@@ -16,15 +16,15 @@ const DEFAULT_MAP_PATH = "assets/ld53_maps/";
 //   "map_narrow",
 // ] as const;
 export const MapPaths = [
-  "tutorial-attack-the-towers",
   "tutorial-dock-under-cannon",
+  "tutorial-attack-the-towers",
   "dont-go-right",
   "thread-needle",
   "every-which-way",
   // "rangetest",
 ] as const;
 
-export type MapName = typeof MapPaths[number];
+export type MapName = (typeof MapPaths)[number];
 
 export const MapHelp: Partial<Record<MapName, string>> = {
   "tutorial-dock-under-cannon": "sail to the dock to deliver cargo",
