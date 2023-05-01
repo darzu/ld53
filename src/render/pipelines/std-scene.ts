@@ -328,6 +328,6 @@ export const canvasTexturePtr = CY.createTexture("canvasTexture", {
 export const mainDepthTex = CY.createDepthTexture("canvasDepth", {
   size: [100, 100],
   onCanvasResize: (w, h) => [w, h],
-  format: "depth32float",
+  format: "depth16unorm",
   // format: "depth24plus-stencil8",
 });
