@@ -459,7 +459,7 @@ export const towerPool = createEntityPool<
     knockOutBricks(tower.stoneTower, windowAABB, true);
     EM.ensureComponentOn(tower, ColliderDef, {
       shape: "AABB",
-      solid: true,
+      solid: false,
       aabb: towerAABB,
     });
 
@@ -614,7 +614,7 @@ const MISS_TARGET_LENGTH = 55;
 const MISS_TARGET_WIDTH = 22;
 const MISS_BY_MAX = 10;
 const MISS_PROBABILITY = 0.25;
-const MAX_RANGE = 400;
+const MAX_RANGE = 300;
 
 EM.registerSystem(
   [StoneTowerDef, WorldFrameDef],
