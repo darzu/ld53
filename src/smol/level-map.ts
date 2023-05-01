@@ -1,5 +1,6 @@
 import { Component, EM, EntityManager } from "../entity-manager.js";
 import { VERBOSE_LOG } from "../flags.js";
+import { TextDef } from "../games/ui.js";
 import {
   AABB,
   AABB2,
@@ -13,7 +14,7 @@ import { V, vec2, vec3, vec4 } from "../sprig-matrix.js";
 import { assert, assertDbg, dbgLogOnce } from "../util.js";
 import { vec4Dbg } from "../utils-3d.js";
 import { randColor } from "../utils-game.js";
-import { MapName, MapBytesSetDef, MapBytes } from "./map-loader.js";
+import { MapName, MapBytesSetDef, MapBytes, MapHelp } from "./map-loader.js";
 import { ScoreDef } from "./score.js";
 import { WindDef } from "./wind.js";
 
@@ -301,7 +302,12 @@ export function parseAndMutateIntoMapData(
 
 export async function setMap(em: EntityManager, name: MapName) {
   console.log(`setting map to ${name}`);
-  const res = await em.whenResources(MapBytesSetDef, RendererDef, ScoreDef);
+  const res = await em.whenResources(
+    MapBytesSetDef,
+    RendererDef,
+    ScoreDef,
+    TextDef
+  );
 
   let __start = performance.now();
 
@@ -315,6 +321,8 @@ export async function setMap(em: EntityManager, name: MapName) {
     levelMap = parseAndMutateIntoMapData(mapBytes, name);
     mapCache.set(name, levelMap);
   }
+
+  res.text.helpText = MapHelp[name] || "";
 
   // TODO(@darzu): FIX LAND SPAWN
   const texResource = res.renderer.renderer.getCyResource(LandMapTexPtr)!;

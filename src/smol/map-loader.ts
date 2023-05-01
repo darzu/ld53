@@ -24,7 +24,11 @@ export const MapPaths = [
   // "rangetest",
 ] as const;
 
-export type MapName = (typeof MapPaths)[number];
+export type MapName = typeof MapPaths[number];
+
+export const MapHelp: Partial<Record<MapName, string>> = {
+  "tutorial-dock-under-cannon": "sail to the dock to deliver cargo",
+};
 
 export interface MapBytes {
   bytes: Uint8ClampedArray;
