@@ -69,8 +69,8 @@ fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
   var color = textureSample(colorTex, samp, uv).rgb;
   let alpha = 1.0;
   // TODO(@darzu): std-ocean and std-mesh store and use normal differently
-  // let normalAndFresnel = textureSample(normTex, samp, uv);
-  // let normal = normalAndFresnel.xyz;
+  let normalAndFresnel = textureSample(normTex, samp, uv);
+  let normal = normalAndFresnel.xyz;
   // let hasFresnel = normalAndFresnel.w;
   // let worldPos = textureSample(posTex, samp, uv).xyz;
 
@@ -129,10 +129,11 @@ fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
   // HACK: disables fresnel
   // fresnelIntensity *= hasFresnel;
 
-  let litColor = mix(
-    color * lightingIntensity, 
-    fresnelColor, 
-  fresnelIntensity * 0.3); // * 0.5;
+  let litColor = normal;
+  // let litColor = mix(
+  //   color * lightingIntensity, 
+  //   fresnelColor, 
+  // fresnelIntensity * 0.3); // * 0.5;
 
   return vec4(litColor, alpha);
 }
