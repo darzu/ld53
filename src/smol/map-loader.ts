@@ -16,15 +16,15 @@ const DEFAULT_MAP_PATH = "assets/ld53_maps/";
 //   "map_narrow",
 // ] as const;
 export const MapPaths = [
-  "rangetest",
+  "tutorial-dock-under-cannon",
+  "dont-go-right",
   "thread-needle",
-  "medium1",
-  "tutorial1",
+  "rangetest",
   "tutorial2",
   "obstacles1",
 ] as const;
 
-export type MapName = typeof MapPaths[number];
+export type MapName = (typeof MapPaths)[number];
 
 export interface MapBytes {
   bytes: Uint8ClampedArray;
