@@ -126,7 +126,7 @@ export async function createShip(em: EntityManager) {
   em.ensureComponentOn(ent, RotationDef);
   em.ensureComponentOn(ent, LinearVelocityDef);
   // em.ensureComponentOn(ent, ColorDef, V(0.5, 0.3, 0.1));
-  em.ensureComponentOn(ent, ColorDef, ENDESGA16.lightBrown);
+  em.ensureComponentOn(ent, ColorDef, V(0, 0, 0)); // painted by individual planks!
 
   const mast = await createMast(em);
   em.ensureComponentOn(mast, PhysicsParentDef, ent.id);

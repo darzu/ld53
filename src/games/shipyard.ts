@@ -44,8 +44,21 @@ import {
   getSizeFromAABB,
   updateAABBWithPoint,
 } from "../physics/aabb.js";
+import { ENDESGA16 } from "../color/palettes.js";
 
-const numRibSegs = 8;
+const railColor = ENDESGA16.darkBrown;
+const keelColor = ENDESGA16.darkBrown;
+const ribColor = ENDESGA16.darkBrown;
+const plankColor = ENDESGA16.lightBrown;
+const transomColor = ENDESGA16.lightBrown;
+const floorColor = ENDESGA16.lightBrown;
+const topPlankColor = ENDESGA16.darkBrown;
+const plankStripeColor = ENDESGA16.blue;
+const stripStartIdx = 4;
+const stripEndIdx = 6;
+const plankStripe2Color = ENDESGA16.white;
+const strip2StartIdx = 7;
+const strip2EndIdx = 8;
 
 export interface HomeShip {
   timberState: WoodState;
@@ -287,11 +300,15 @@ export function createHomeShip(): HomeShip {
   keelPath.forEach((p) => updateAABBWithPoint(keelAABB, p.pos));
   const keelSize = getSizeFromAABB(keelAABB, vec3.create());
 
-  appendBoard(builder.mesh, {
-    path: keelPath,
-    width: keelWidth,
-    depth: keelDepth,
-  });
+  appendBoard(
+    builder.mesh,
+    {
+      path: keelPath,
+      width: keelWidth,
+      depth: keelDepth,
+    },
+    keelColor
+  );
 
   // RIBS
   const ribWidth = 0.5;
@@ -409,17 +426,25 @@ export function createHomeShip(): HomeShip {
     // }
     // if (i === 1) dbgPathWithGizmos(weirdP);
 
-    appendBoard(builder.mesh, {
-      path: bPath,
-      width: ribWidth,
-      depth: ribDepth,
-    });
+    appendBoard(
+      builder.mesh,
+      {
+        path: bPath,
+        width: ribWidth,
+        depth: ribDepth,
+      },
+      ribColor
+    );
 
-    appendBoard(builder.mesh, {
-      path: mirrorPath(clonePath(bPath), V(0, 0, 1)),
-      width: ribWidth,
-      depth: ribDepth,
-    });
+    appendBoard(
+      builder.mesh,
+      {
+        path: mirrorPath(clonePath(bPath), V(0, 0, 1)),
+        width: ribWidth,
+        depth: ribDepth,
+      },
+      ribColor
+    );
   }
 
   // RAIL
@@ -435,16 +460,24 @@ export function createHomeShip(): HomeShip {
   }
   // rail board:
   const mirrorRailPath = mirrorPath(clonePath(railPath), V(0, 0, 1));
-  appendBoard(builder.mesh, {
-    path: railPath,
-    width: ribWidth,
-    depth: ribDepth,
-  });
-  appendBoard(builder.mesh, {
-    path: mirrorRailPath,
-    width: ribWidth,
-    depth: ribDepth,
-  });
+  appendBoard(
+    builder.mesh,
+    {
+      path: railPath,
+      width: ribWidth,
+      depth: ribDepth,
+    },
+    railColor
+  );
+  appendBoard(
+    builder.mesh,
+    {
+      path: mirrorRailPath,
+      width: ribWidth,
+      depth: ribDepth,
+    },
+    railColor
+  );
 
   // translatePath(railPath, [0, 0, 8]);
   // dbgPathWithGizmos(railPath);
@@ -542,16 +575,29 @@ export function createHomeShip(): HomeShip {
     let mirroredPath = mirrorPath(clonePath(nodes), [0, 0, 1]);
     plankPathsMirrored.push(mirroredPath);
 
-    appendBoard(builder.mesh, {
-      path: nodes,
-      width: plankWidth,
-      depth: plankDepth,
-    });
-    appendBoard(builder.mesh, {
-      path: mirroredPath,
-      width: plankWidth,
-      depth: plankDepth,
-    });
+    let color = plankColor;
+    if (i === 0) color = topPlankColor;
+    if (stripStartIdx <= i && i <= stripEndIdx) color = plankStripeColor;
+    if (strip2StartIdx <= i && i <= strip2EndIdx) color = plankStripe2Color;
+
+    appendBoard(
+      builder.mesh,
+      {
+        path: nodes,
+        width: plankWidth,
+        depth: plankDepth,
+      },
+      color
+    );
+    appendBoard(
+      builder.mesh,
+      {
+        path: mirroredPath,
+        width: plankWidth,
+        depth: plankDepth,
+      },
+      color
+    );
   }
 
   // TRANSOM
@@ -577,11 +623,19 @@ export function createHomeShip(): HomeShip {
       quat.fromEuler(-Math.PI / 2, 0, Math.PI / 2, n.rot);
       quat.rotateY(n.rot, -Math.PI / 16, n.rot);
     }
-    appendBoard(builder.mesh, {
-      path: path,
-      width: plankWidth,
-      depth: plankDepth,
-    });
+    let color = transomColor;
+    if (i === 0) color = topPlankColor;
+    if (stripStartIdx <= i && i <= stripEndIdx) color = plankStripeColor;
+    if (strip2StartIdx <= i && i <= strip2EndIdx) color = plankStripe2Color;
+    appendBoard(
+      builder.mesh,
+      {
+        path: path,
+        width: plankWidth,
+        depth: plankDepth,
+      },
+      color
+    );
   }
   // REAR RAIL
   {
@@ -598,11 +652,15 @@ export function createHomeShip(): HomeShip {
     for (let n of path) {
       quat.fromEuler(-Math.PI / 2, 0, Math.PI / 2, n.rot);
     }
-    appendBoard(builder.mesh, {
-      path: path,
-      width: ribWidth,
-      depth: ribDepth,
-    });
+    appendBoard(
+      builder.mesh,
+      {
+        path: path,
+        width: ribWidth,
+        depth: ribDepth,
+      },
+      railColor
+    );
   }
 
   // FLOOR
@@ -660,16 +718,24 @@ export function createHomeShip(): HomeShip {
       }));
       // dbgPathWithGizmos(path);
       let mirroredPath = mirrorPath(clonePath(path), [0, 0, 1]);
-      appendBoard(builder.mesh, {
-        path: path,
-        width: floorBoardWidth / 2 - floorBoardGap,
-        depth: plankDepth,
-      });
-      appendBoard(builder.mesh, {
-        path: mirroredPath,
-        width: floorBoardWidth / 2 - floorBoardGap,
-        depth: plankDepth,
-      });
+      appendBoard(
+        builder.mesh,
+        {
+          path: path,
+          width: floorBoardWidth / 2 - floorBoardGap,
+          depth: plankDepth,
+        },
+        floorColor
+      );
+      appendBoard(
+        builder.mesh,
+        {
+          path: mirroredPath,
+          width: floorBoardWidth / 2 - floorBoardGap,
+          depth: plankDepth,
+        },
+        floorColor
+      );
       // break; // TODO(@darzu):
     }
   }
@@ -960,7 +1026,7 @@ function createEvenPathFromBezier(
   return path;
 }
 
-export function appendBoard(mesh: RawMesh, board: Board) {
+export function appendBoard(mesh: RawMesh, board: Board, color = BLACK) {
   // TODO(@darzu): build up wood state along with the mesh!
 
   assert(board.path.length >= 2, `invalid board path!`);
@@ -977,7 +1043,7 @@ export function appendBoard(mesh: RawMesh, board: Board) {
 
   // TODO(@darzu): streamline
   for (let qi = firstQuadIdx; qi < mesh.quad.length; qi++)
-    mesh.colors.push(vec3.clone(BLACK));
+    mesh.colors.push(vec3.clone(color));
 
   // NOTE: for provoking vertices,
   //  indexes 0, 1 of a loop are for stuff behind (end cap, previous sides)
@@ -1023,38 +1089,6 @@ export function appendBoard(mesh: RawMesh, board: Board) {
     // append
     mesh.pos.push(v0, v1, v2, v3);
   }
-}
-
-export function appendTimberRib(b: TimberBuilder, ccw: boolean) {
-  const firstQuadIdx = b.mesh.quad.length;
-
-  const ccwf = ccw ? -1 : 1;
-
-  mat4.rotateX(b.cursor, Math.PI * 0.4 * -ccwf, b.cursor);
-
-  b.addLoopVerts();
-  b.addEndQuad(true);
-  let xFactor = 0.05;
-  for (let i = 0; i < numRibSegs; i++) {
-    mat4.translate(b.cursor, [0, 2, 0], b.cursor);
-    mat4.rotateX(b.cursor, Math.PI * xFactor * ccwf, b.cursor);
-    b.addLoopVerts();
-    b.addSideQuads();
-    mat4.rotateX(b.cursor, Math.PI * xFactor * ccwf, b.cursor);
-    // mat4.rotateY(b.cursor, b.cursor, Math.PI * -0.003);
-    xFactor = xFactor - 0.005;
-  }
-  mat4.translate(b.cursor, [0, 2, 0], b.cursor);
-  b.addLoopVerts();
-  b.addSideQuads();
-  b.addEndQuad(false);
-
-  for (let qi = firstQuadIdx; qi < b.mesh.quad.length; qi++)
-    b.mesh.colors.push(vec3.clone(BLACK));
-
-  // console.dir(b.mesh);
-
-  return b.mesh;
 }
 
 export function fixPathBasis(

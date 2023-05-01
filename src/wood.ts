@@ -346,10 +346,13 @@ onInit((em: EntityManager) => {
 
               // create flying splinter (from pool)
               {
+                const qi = seg.quadSideIdxs[0];
+                const quadColor = mesh.colors[qi];
                 const splinter = pool.getNext();
                 if (RenderableDef.isOn(splinter))
                   splinter.renderable.hidden = false;
                 vec3.copy(splinter.color, w.color);
+                vec3.add(splinter.color, quadColor, splinter.color);
                 const pos = getLineMid(vec3.create(), seg.midLine);
                 vec3.transformMat4(pos, w.world.transform, pos);
                 EM.ensureComponentOn(splinter, PositionDef);
@@ -598,6 +601,11 @@ function addSplinterEnd(
     // b.mesh.quad.forEach((_) => b.mesh.colors.push(vec3.clone(BLACK)));
     // b.mesh.tri.forEach((_) => b.mesh.colors.push(vec3.clone(BLACK)));
   }
+
+  const qi = seg.quadSideIdxs[0];
+  const color = wood.mesh.colors[qi];
+  const triColorStartIdx = wood.mesh.quad.length;
+
   // TODO(@darzu): don't alloc all this mesh stuff!!
   const splinterMesh = normalizeMesh(_tempSplinterMesh);
 
@@ -615,6 +623,7 @@ function addSplinterEnd(
     splinterMesh.tri[i][1] += vertIdx;
     splinterMesh.tri[i][2] += vertIdx;
     vec3.copy(wood.mesh.tri[triIdx + i], splinterMesh.tri[i]);
+    vec3.copy(wood.mesh.colors[triColorStartIdx + triIdx + i], color);
   }
   for (let i = 0; i < _quadsPerSplinter; i++) {
     splinterMesh.quad[i][0] += vertIdx;
@@ -622,6 +631,7 @@ function addSplinterEnd(
     splinterMesh.quad[i][2] += vertIdx;
     splinterMesh.quad[i][3] += vertIdx;
     vec4.copy(wood.mesh.quad[quadIdx + i], splinterMesh.quad[i]);
+    vec3.copy(wood.mesh.colors[quadIdx + i], color);
   }
 
   return sIdx;
