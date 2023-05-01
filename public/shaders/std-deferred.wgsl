@@ -96,29 +96,30 @@ fn frag_main(@location(0) uv : vec2<f32>) -> @location(0) vec4<f32> {
       let attenuation = 1.0 / (light.constant + light.linear * lightDist +
                                 light.quadratic * lightDist * lightDist);
       let lightAng = clamp(dot(toLight, normal), 0.0, 1.0);
-      let halfway = normalize(toLight + normal); // TODO(@darzu): use?!
+      // let halfway = normalize(toLight + normal); // TODO(@darzu): use?!
       let cameraAng = clamp(dot(normalize(toCamera), normal), 0.0, 1.0);
 
-      let shadowFull = (scene.cameraViewProjMatrix * vec4(worldPos, 1.0));
-      let shadowFullZ = shadowFull.z / shadowFull.w;
+      // let shadowFull = (scene.cameraViewProjMatrix * vec4(worldPos, 1.0));
+      // let shadowFullZ = shadowFull.z / shadowFull.w;
 
-      // TODO(@darzu): DBG: try outputing depth from camera as result?
-      var cascadeIdx = 0u;
-      var viewProj = pointLights.ms[0].viewProj0;
-      if (shadowFullZ > light.depth0) {
-        cascadeIdx = 1u;
-        viewProj = pointLights.ms[0].viewProj1;
-      }
+      // // TODO(@darzu): DBG: try outputing depth from camera as result?
+      // var cascadeIdx = 0u;
+      // var viewProj = pointLights.ms[0].viewProj0;
+      // if (shadowFullZ > light.depth0) {
+      //   cascadeIdx = 1u;
+      //   viewProj = pointLights.ms[0].viewProj1;
+      // }
 
-      // XY is in (-1, 1) space, Z is in (0, 1) space
-      let posFromLight = (viewProj * vec4(worldPos, 1.0)).xyz;
+      // // XY is in (-1, 1) space, Z is in (0, 1) space
+      // let posFromLight = (viewProj * vec4(worldPos, 1.0)).xyz;
       
-      // Convert XY to (0, 1), Y is flipped because texture coords are Y-down.
-      let shadowPos = vec3<f32>(posFromLight.xy * vec2<f32>(0.5, -0.5) + vec2<f32>(0.5, 0.5),
-                                posFromLight.z
-                                );
+      // // Convert XY to (0, 1), Y is flipped because texture coords are Y-down.
+      // let shadowPos = vec3<f32>(posFromLight.xy * vec2<f32>(0.5, -0.5) + vec2<f32>(0.5, 0.5),
+      //                           posFromLight.z
+      //                           );
 
-      let shadowVis = getShadowVis(shadowPos, normal, toLight, cascadeIdx);
+      // let shadowVis = getShadowVis(shadowPos, normal, toLight, cascadeIdx);
+      let shadowVis = 1.0;
 
       lightingIntensity += (light.ambient.r * attenuation) 
         + (light.diffuse.r * lightAng * attenuation * shadowVis);
