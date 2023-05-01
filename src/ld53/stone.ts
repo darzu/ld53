@@ -3,21 +3,28 @@ import { ColorDef } from "../color-ecs.js";
 import { ENDESGA16 } from "../color/palettes.js";
 import { DeadDef } from "../delete.js";
 import { createRef, Ref } from "../em_helpers.js";
-import { EM, Entity, EntityW } from "../entity-manager.js";
+import { Component, EM, Entity, EntityW } from "../entity-manager.js";
 import { createEntityPool } from "../entity-pool.js";
-import { fireBullet } from "../games/bullet.js";
+import { Bullet, BulletDef, fireBullet } from "../games/bullet.js";
 import { PartyDef } from "../games/party.js";
 import { Path } from "../games/shipyard.js";
 import { jitter } from "../math.js";
 import {
   AABB,
+  copyAABB,
   createAABB,
   doesOverlapAABB,
   mergeAABBs,
   pointInAABB,
+  transformAABB,
   updateAABBWithPoint,
 } from "../physics/aabb.js";
-import { WorldFrameDef } from "../physics/nonintersection.js";
+import { emptyLine } from "../physics/broadphase.js";
+import { ColliderDef } from "../physics/collider.js";
+import {
+  PhysicsResultsDef,
+  WorldFrameDef,
+} from "../physics/nonintersection.js";
 import {
   PhysicsParentDef,
   PositionDef,
@@ -27,9 +34,11 @@ import { Mesh } from "../render/mesh.js";
 import {
   RenderableConstructDef,
   RenderableDef,
+  RendererDef,
 } from "../render/renderer-ecs.js";
 import { mat4, tV, V, vec3, quat } from "../sprig-matrix.js";
 import { TimeDef } from "../time.js";
+import { assert } from "../util.js";
 import { vec3Dbg } from "../utils-3d.js";
 
 interface Brick {
@@ -38,6 +47,8 @@ interface Brick {
   index: number;
   // track whether this brick has been destroyed
   knockedOut: boolean;
+  health: number;
+  pos: vec3[];
 }
 
 interface TowerRow {
@@ -206,6 +217,56 @@ function knockOutBricks(tower: Tower, aabb: AABB, shrink = false): number {
   return bricksKnockedOut;
 }
 
+// takes a tower-space AABB--not world space!
+function knockOutBricksByBullet(
+  tower: Tower,
+  aabb: AABB,
+  bullet: Bullet
+): number {
+  // [bricks knocked out, updated health]
+  let bricksKnockedOut = 0;
+  for (let row of tower.rows) {
+    if (doesOverlapAABB(row.aabb, aabb)) {
+      for (let brick of row.bricks) {
+        if (bullet.health <= 0) {
+          return bricksKnockedOut;
+        }
+        if (doesOverlapAABB(brick.aabb, aabb)) {
+          const dmg = Math.min(brick.health, bullet.health) + 0.001;
+          bullet.health -= dmg;
+          brick.health -= dmg;
+          if (brick.health <= 0) {
+            knockOutBrickAtIndex(tower, brick.index);
+            if (!brick.knockedOut) {
+              brick.knockedOut = true;
+              bricksKnockedOut++;
+            }
+          }
+        }
+      }
+    }
+  }
+  return bricksKnockedOut;
+}
+
+function restoreBrick(tower: Tower, brick: Brick) {
+  if (brick.knockedOut) {
+    for (let i = 0; i < 8; i++) {
+      vec3.copy(tower.mesh.pos[brick.index + i], brick.pos[brick.index + i]);
+    }
+    brick.knockedOut = false;
+  }
+  brick.health = startingBrickHealth;
+}
+
+function restoreAllBricks(tower: Tower) {
+  for (let row of tower.rows) {
+    for (let brick of row.bricks) {
+      restoreBrick(tower, brick);
+    }
+  }
+}
+
 const maxStoneTowers = 10;
 
 const height: number = 70;
@@ -214,6 +275,7 @@ const approxBrickWidth: number = 5;
 const approxBrickHeight: number = 2;
 const brickDepth: number = 2.5;
 const coolMode: boolean = false;
+const startingBrickHealth = 10;
 
 export function calculateNAndBrickWidth(
   radius: number,
@@ -272,7 +334,9 @@ export const towerPool = createEntityPool<
       const index = mesh.pos.length;
       const aabb = createAABB();
       // base
+      const pos: vec3[] = [];
       function addPos(p: vec3) {
+        pos.push(p);
         mesh.pos.push(p);
         updateAABBWithPoint(aabb, p);
       }
@@ -306,10 +370,17 @@ export const towerPool = createEntityPool<
       for (let i = 0; i < 6; i++) {
         mesh.colors.push(color);
       }
-      return { aabb, index, knockedOut: false };
+      return {
+        aabb,
+        index,
+        knockedOut: false,
+        health: startingBrickHealth,
+        pos,
+      };
     }
 
     let rotation = 0;
+    let towerAABB = createAABB();
     for (let r = 0; r < rows; r++) {
       const row: TowerRow = { aabb: createAABB(), bricks: [] };
       tower.stoneTower.rows.push(row);
@@ -338,6 +409,7 @@ export const towerPool = createEntityPool<
           mat4.rotateY(cursor, angle, cursor);
         }
       }
+      mergeAABBs(towerAABB, towerAABB, row.aabb);
     }
     //mesh.quad.forEach(() => mesh.colors.push(V(0, 0, 0)));
     mesh.quad.forEach((_, i) => mesh.surfaceIds.push(i + 1));
@@ -355,7 +427,14 @@ export const towerPool = createEntityPool<
       ),
     };
     knockOutBricks(tower.stoneTower, windowAABB, true);
+    EM.ensureComponentOn(tower, ColliderDef, {
+      shape: "AABB",
+      solid: true,
+      aabb: towerAABB,
+    });
+
     EM.ensureComponentOn(tower, RenderableConstructDef, mesh);
+    EM.ensureComponentOn(tower, ColorDef, ENDESGA16.lightGray);
     return tower;
   },
   onSpawn: async (p) => {
@@ -370,6 +449,7 @@ export const towerPool = createEntityPool<
     // platform.towerPlatform.tiltPeriod = tiltPeriod;
     // platform.towerPlatform.tiltTimer = tiltTimer;
     p.stoneTower.lastFired = 0;
+    restoreAllBricks(p.stoneTower);
   },
   onDespawn: (e) => {
     // tower
@@ -608,4 +688,45 @@ EM.registerSystem(
     __prevTime = res.time.time;
   },
   "stoneTowerAttack"
+);
+
+EM.registerSystem(
+  [StoneTowerDef, RenderableDef, WorldFrameDef],
+  [PhysicsResultsDef, RendererDef],
+  (es, res) => {
+    const ballAABB = createAABB();
+
+    for (let tower of es) {
+      const hits = res.physicsResults.collidesWith.get(tower.id);
+      if (hits) {
+        const balls = hits
+          .map((h) => EM.findEntity(h, [BulletDef, WorldFrameDef, ColliderDef]))
+          .filter((b) => {
+            // TODO(@darzu): check authority and team
+            return b && b.bullet.health > 0;
+          })
+          .map((b) => b!);
+        const invertedTransform = mat4.invert(tower.world.transform);
+        let totalKnockedOut = 0;
+        for (let ball of balls) {
+          assert(ball.collider.shape === "AABB");
+          copyAABB(ballAABB, ball.collider.aabb);
+          transformAABB(ballAABB, ball.world.transform);
+          transformAABB(ballAABB, invertedTransform);
+          totalKnockedOut += knockOutBricksByBullet(
+            tower.stoneTower,
+            ballAABB,
+            ball.bullet
+          );
+        }
+        if (totalKnockedOut) {
+          res.renderer.renderer.stdPool.updateMeshVertices(
+            tower.renderable.meshHandle,
+            tower.stoneTower.mesh
+          );
+        }
+      }
+    }
+  },
+  "stoneTowerDamage"
 );
