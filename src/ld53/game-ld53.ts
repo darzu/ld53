@@ -125,7 +125,7 @@ PERF:
 [ ] reduce triangles on ocean
 */
 
-const DBG_PLAYER = false;
+const DBG_PLAYER = true;
 // const SHIP_START_POS = V(100, 0, -100);
 
 // world map is centered around 0,0
@@ -260,7 +260,8 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   // em.ensureComponentOn(sky, ColorDef, V(0.9, 0.9, 0.9));
 
   // ocean
-  const oceanVertsPerWorldUnit = 0.02;
+  // const oceanVertsPerWorldUnit = 0.02;
+  const oceanVertsPerWorldUnit = 0.25;
   const worldUnitPerOceanVerts = 1 / oceanVertsPerWorldUnit;
   const oceanZCount = Math.floor(WORLD_WIDTH * oceanVertsPerWorldUnit);
   const oceanXCount = Math.floor(WORLD_HEIGHT * oceanVertsPerWorldUnit);
@@ -454,11 +455,17 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     // g.cameraFollow.yawOffset = 0.0;
     // g.cameraFollow.pitchOffset = -0.615;
 
-    vec3.copy(g.position, [63.88, 42.83, -53.13]);
-    quat.copy(g.rotation, [0.0, 0.83, 0.0, 0.56]);
+    // vec3.copy(g.position, [63.88, 42.83, -53.13]);
+    // quat.copy(g.rotation, [0.0, 0.83, 0.0, 0.56]);
+    // vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
+    // g.cameraFollow.yawOffset = 0.0;
+    // g.cameraFollow.pitchOffset = -0.738;
+
+    vec3.copy(g.position, [57.26, 21.33, -499.14]);
+    quat.copy(g.rotation, [0.0, -0.92, 0.0, 0.4]);
     vec3.copy(g.cameraFollow.positionOffset, [0.0, 0.0, 5.0]);
     g.cameraFollow.yawOffset = 0.0;
-    g.cameraFollow.pitchOffset = -0.738;
+    g.cameraFollow.pitchOffset = -0.627;
 
     em.registerSystem(
       [GhostDef, WorldFrameDef, ColliderDef],
