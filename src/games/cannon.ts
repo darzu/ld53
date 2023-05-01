@@ -69,7 +69,8 @@ export const { CannonPropsDef, CannonLocalDef, createCannon, createCannonNow } =
         undefined,
         true,
         1.0,
-        Math.PI / 4
+        Math.PI / 4,
+        "W/S: pitch, A/D: turn, left click: fire"
       );
       em.ensureComponentOn(e, ColorDef, V(0, 0, 0));
       em.ensureComponentOn(
@@ -115,8 +116,8 @@ export function registerCannonSystems(em: EntityManager) {
         vec3.add(firePos, cannon.world.position, firePos);
         // TODO(@darzu): MULTIPLAYER BULLETS broken b/c LD51
         // console.log("fire-cannon");
-        const v = 0.15;
-        const g = 9.0 * 0.00001;
+        const v = 0.18;
+        const g = 6.0 * 0.00001;
         const b = fireBullet(
           EM,
           2,

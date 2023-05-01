@@ -626,8 +626,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   EM.requireSystem("turnMast");
 
   const { text } = await EM.whenResources(TextDef);
-  text.lowerText =
-    "W/S: unfurl/furl, A/D: turn, SPACE: harvest on/off, E: use/unuse rudder";
+  text.lowerText = "W/S: unfurl/furl, A/D: turn, E: drop rudder";
   if (DBG_PLAYER) text.lowerText = "";
   // Spawn towers
   // {
