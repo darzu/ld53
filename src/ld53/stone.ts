@@ -61,7 +61,7 @@ export const StoneTowerDef = EM.defineComponent(
     cannon: EntityW<
       [typeof PositionDef, typeof RotationDef, typeof WorldFrameDef]
     >,
-    fireRate = 2000,
+    fireRate = 1500,
     projectileSpeed = 0.2,
     firingRadius = Math.PI / 8
   ) =>
@@ -397,12 +397,17 @@ export async function spawnStoneTower() {
 const __previousPartyPos = vec3.create();
 let __prevTime = 0;
 
-const MAX_THETA = (31 * Math.PI) / 64;
-const MIN_THETA = -(31 * Math.PI) / 64;
-const THETA_JITTER = 0; //Math.PI / 128;
-const PHI_JITTER = 0; // Math.PI / 32;
+const MAX_THETA = Math.PI / 2 - Math.PI / 16;
+const MIN_THETA = -MAX_THETA;
+const THETA_JITTER = 0; //Math.PI / 256;
+const PHI_JITTER = 0; //Math.PI / 64;
 const TARGET_WIDTH = 12;
 const TARGET_LENGTH = 30;
+const MISS_TARGET_LENGTH = 55;
+const MISS_TARGET_WIDTH = 22;
+const MISS_BY_MAX = 10;
+const MISS_PROBABILITY = 0.25;
+const MAX_RANGE = 400;
 
 EM.registerSystem(
   [StoneTowerDef, WorldFrameDef],
@@ -427,22 +432,49 @@ EM.registerSystem(
         1 / (res.time.time - __prevTime)
       );
 
+      let zBasis = vec3.copy(vec3.tmp(), res.party.dir);
+      let xBasis = vec3.cross(res.party.dir, [0, 1, 0]);
+      let missed = false;
       // pick an actual target to aim for on the ship
-      const zBasis = vec3.copy(vec3.tmp(), res.party.dir);
-      const xBasis = vec3.cross(res.party.dir, [0, 1, 0]);
-      vec3.scale(zBasis, (Math.random() - 0.5) * TARGET_LENGTH, zBasis);
-      vec3.scale(xBasis, (Math.random() - 0.5) * TARGET_WIDTH, xBasis);
-      //console.log(`xBasis is ${vec3Dbg(xBasis)}`);
-      //console.log(`zBasis is ${vec3Dbg(zBasis)}`);
+      if (Math.random() < MISS_PROBABILITY) {
+        missed = true;
+        let xMul = 0;
+        let zMul = 0;
+        if (Math.random() < 0.5) {
+          // miss width-wise
+          xMul = 1;
+        } else {
+          // miss length-wise
+          zMul = 1;
+        }
+        if (Math.random() < 0.5) {
+          xMul *= -1;
+          zMul *= -1;
+        }
+        vec3.scale(
+          zBasis,
+          zMul * (Math.random() * MISS_BY_MAX + 0.5 * MISS_TARGET_LENGTH),
+          zBasis
+        );
+        vec3.scale(
+          xBasis,
+          xMul * (Math.random() * MISS_BY_MAX + 0.5 * MISS_TARGET_WIDTH),
+          xBasis
+        );
+        xBasis[1] += 5;
+      } else {
+        vec3.scale(zBasis, (Math.random() - 0.5) * TARGET_LENGTH, zBasis);
+        vec3.scale(xBasis, (Math.random() - 0.5) * TARGET_WIDTH, xBasis);
+      }
+
       const target = vec3.add(res.party.pos, vec3.add(zBasis, xBasis, xBasis));
-      target[1] *= 0.5;
-      console.log(`adjusted target is ${vec3Dbg(target)}`);
+      //target[1] *= 0.75;
+      //console.log(`adjusted target is ${vec3Dbg(target)}`);
       const towerSpaceTarget = vec3.transformMat4(
         target,
         invertedTransform,
         target
       );
-
       /*
       const zvelocity = targetVelocity[2];
 
@@ -482,6 +514,10 @@ EM.registerSystem(
         // target is behind us, don't worry about it
         continue;
       }
+      if (x > MAX_RANGE) {
+        // target is too far away, don't worry about it
+        continue;
+      }
 
       let phi = -Math.atan(z / x);
 
@@ -493,21 +529,27 @@ EM.registerSystem(
 
       // now, find the angle from our cannon.
       // https://en.wikipedia.org/wiki/Projectile_motion#Angle_%CE%B8_required_to_hit_coordinate_(x,_y)
-      const theta1 = Math.atan(
+      let theta1 = Math.atan(
         (v * v + Math.sqrt(v * v * v * v - g * (g * x * x + 2 * y * v * v))) /
           (g * x)
       );
-      const theta2 = Math.atan(
+      let theta2 = Math.atan(
         (v * v - Math.sqrt(v * v * v * v - g * (g * x * x + 2 * y * v * v))) /
           (g * x)
       );
 
       // prefer smaller theta
-      let theta = theta1;
-      if (theta2 < theta1) theta = theta2;
+      if (theta2 > theta1) {
+        let temp = theta1;
+        theta1 = theta2;
+        theta2 = temp;
+      }
+      let theta = theta2;
+      if (isNaN(theta) || theta > MAX_THETA || theta < MIN_THETA) {
+        theta = theta1;
+      }
       if (isNaN(theta) || theta > MAX_THETA || theta < MIN_THETA) {
         // no firing solution--target is too far or too close
-        //console.log("target is in sights but too far away");
         continue;
       }
       // console.log(
@@ -543,7 +585,7 @@ EM.registerSystem(
         mat4.mul(tower.world.transform, mat4.fromQuat(rot)),
         worldRot
       );
-      fireBullet(
+      const b = fireBullet(
         EM,
         2,
         tower.stoneTower.cannon()!.world.position,
@@ -555,6 +597,11 @@ EM.registerSystem(
         20.0,
         [1, 0, 0]
       );
+      b.then((b) => {
+        if (missed) {
+          vec3.set(0.8, 0.2, 0.2, b.color);
+        }
+      });
       tower.stoneTower.lastFired = res.time.time;
     }
     vec3.copy(__previousPartyPos, res.party.pos);

@@ -143,6 +143,7 @@ export function createOrResetBullet(
   vec3.copy(e.parametric.init.vel, props.linearVelocity);
   vec3.copy(e.parametric.init.accel, [0, -props.gravity, 0]);
   e.parametric.startMs = res.time.time;
+  return e;
 }
 
 export function registerBuildBulletsSystem(em: EntityManager) {
@@ -232,7 +233,7 @@ export async function fireBullet(
   // TODO(@darzu): This breaks multiplayer maybe!
   // TODO(@darzu): MULTIPLAYER. need to think how multiplayer and entity pools interact.
   const res = await em.whenResources(MeDef, TimeDef, AssetsDef);
-  createOrResetBullet(em, e, res);
+  return createOrResetBullet(em, e, res);
 }
 
 type BulletPart = EntityW<[typeof PositionDef, typeof ColorDef]>;
