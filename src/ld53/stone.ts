@@ -767,11 +767,6 @@ EM.registerSystem(
       // );
       // ok, we have a firing solution. rotate to the right angle
 
-      const rot = tower.stoneTower.cannon()!.rotation;
-      quat.identity(rot);
-      quat.rotateZ(rot, theta, rot);
-      quat.rotateY(rot, phi, rot);
-
       // fire if we are within a couple of frames
       /*
       console.log(`flightTime=${flightTime} timeToZZero=${timeToZZero}`);
@@ -785,6 +780,11 @@ EM.registerSystem(
       ) {
         continue;
       }
+      const rot = tower.stoneTower.cannon()!.rotation;
+      quat.identity(rot);
+      quat.rotateZ(rot, theta, rot);
+      quat.rotateY(rot, phi, rot);
+
       // when we fire, add some jitter to both theta and phi
       quat.rotateZ(rot, jitter(THETA_JITTER), rot);
       quat.rotateZ(rot, jitter(PHI_JITTER), rot);
