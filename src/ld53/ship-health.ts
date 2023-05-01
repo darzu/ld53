@@ -36,7 +36,7 @@ import { assert } from "../util.js";
 import { vec3Dbg } from "../utils-3d.js";
 import { WoodHealthDef } from "../wood.js";
 
-const MIN_HEALTH_PERCENT = 0.8;
+const MIN_HEALTH_PERCENT = 0.7;
 
 export const ShipHealthDef = EM.defineComponent("shipHealth", () => ({
   needsUpdate: false,

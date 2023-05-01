@@ -115,8 +115,8 @@ export function registerCannonSystems(em: EntityManager) {
         vec3.add(firePos, cannon.world.position, firePos);
         // TODO(@darzu): MULTIPLAYER BULLETS broken b/c LD51
         // console.log("fire-cannon");
-        const v = 0.15;
-        const g = 9.0 * 0.00001;
+        const v = 0.18;
+        const g = 6.0 * 0.00001;
         const b = fireBullet(
           EM,
           2,
