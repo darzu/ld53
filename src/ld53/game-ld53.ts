@@ -50,16 +50,23 @@ import {
   quatFromUpForward,
   randNormalPosVec3,
   randNormalVec3,
+  vec2Dbg,
   vec3Dbg,
 } from "../utils-3d.js";
 import { drawBall, randColor } from "../utils-game.js";
 import { DevConsoleDef } from "../console.js";
 import { clamp, jitter, max, sum } from "../math.js";
 import { CY } from "../render/gpu-registry.js";
-import { assert } from "../util.js";
+import { assert, dbgOnce } from "../util.js";
 import { texTypeToBytes } from "../render/gpu-struct.js";
 import { PartyDef } from "../games/party.js";
-import { copyAABB, createAABB, getAABBCornersTemp } from "../physics/aabb.js";
+import {
+  copyAABB,
+  createAABB,
+  getAABBCornersTemp,
+  getSizeFromAABB,
+  updateAABBWithPoint,
+} from "../physics/aabb.js";
 import { rasterizeTri } from "../raster.js";
 import { InputsDef } from "../inputs.js";
 import { raiseManTurret } from "../games/turret.js";
@@ -259,6 +266,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   const maxSurfId = max(oceanMesh.surfaceIds);
   console.log("maxSurfId");
   console.log(maxSurfId);
+  const oceanAABB = createAABB();
   oceanMesh.pos.forEach((p, i) => {
     const x = p[0] * worldUnitPerOceanVerts - WORLD_HEIGHT * 0.5;
     const z = p[2] * worldUnitPerOceanVerts - WORLD_WIDTH * 0.5;
@@ -266,7 +274,22 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
     p[0] = x;
     p[1] = y;
     p[2] = z;
+    updateAABBWithPoint(oceanAABB, p);
   });
+  const oceanSize = getSizeFromAABB(oceanAABB, vec3.create());
+  function uvToPos([u, v]: vec2, out: vec3): vec3 {
+    // console.log(u + " " + v);
+    out[0] = v * oceanSize[0] + oceanAABB.min[0];
+    out[1] = 0;
+    out[2] = u * oceanSize[2] + oceanAABB.min[2];
+    // if (dbgOnce("uvToPos")) {
+    //   console.log("uvToPos");
+    //   console.dir(oceanSize);
+    //   console.dir(oceanAABB);
+    //   console.dir([u, v]);
+    // }
+    return out;
+  }
   // TODO(@darzu): I don't think the PBR-ness of this color is right
   // initOcean(oceanMesh, V(0.1, 0.3, 0.8));
   initOcean(oceanMesh, ENDESGA16.blue);
@@ -335,16 +358,21 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
         const { ocean } = res;
 
         // console.log("running bouyancy");
+        let i = 0;
         for (let bouy of es) {
           // const uv = V(0.5, 0.5);
           const uv = bouy.uvPos;
-          const p = ocean.uvToPos(bouy.position, uv);
+          uvToPos(uv, bouy.position);
+          // console.log(`uv ${vec2Dbg(uv)} -> xyz ${vec3Dbg(bouy.position)}`);
+          // const p = ocean.uvToPos(bouy.position, uv);
           // p[0] = p[0] * worldUnitPerOceanVerts - WORLD_HEIGHT * 0.5;
           // p[2] = p[2] * worldUnitPerOceanVerts - WORLD_WIDTH * 0.5;
           let disp = _t1;
           ocean.uvToGerstnerDispAndNorm(disp, _t2, uv);
           vec3.add(bouy.position, disp, bouy.position);
           // console.log(vec3Dbg(bouy.position));
+
+          i++;
         }
       },
       "shipBouyancy"
