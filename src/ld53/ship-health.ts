@@ -59,7 +59,6 @@ EM.registerSystem(
   [],
   (es, res) => {
     for (let ship of es) {
-      console.log("updating ship health");
       const timberHealth = getCurrentHealth(ship.woodHealth);
       if (!ship.shipHealth.startingTimberHealth) {
         ship.shipHealth.startingTimberHealth = timberHealth;

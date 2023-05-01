@@ -44,7 +44,7 @@ import { ParametricDef } from "./parametric-motion.js";
 
 // TODO(@darzu): MULTIPLAYER BULLETS might have been broken during LD51
 
-const _maxBullets = 15;
+const _maxBullets = 100;
 
 export const BulletDef = EM.defineComponent(
   "bullet",

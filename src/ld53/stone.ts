@@ -30,6 +30,7 @@ import {
 } from "../render/renderer-ecs.js";
 import { mat4, tV, V, vec3, quat } from "../sprig-matrix.js";
 import { TimeDef } from "../time.js";
+import { vec3Dbg } from "../utils-3d.js";
 
 interface Brick {
   aabb: AABB;
@@ -61,7 +62,7 @@ export const StoneTowerDef = EM.defineComponent(
       [typeof PositionDef, typeof RotationDef, typeof WorldFrameDef]
     >,
     fireRate = 2000,
-    projectileSpeed = 0.15,
+    projectileSpeed = 0.2,
     firingRadius = Math.PI / 8
   ) =>
     ({
@@ -207,7 +208,7 @@ function knockOutBricks(tower: Tower, aabb: AABB, shrink = false): number {
 
 const maxStoneTowers = 10;
 
-const height: number = 100;
+const height: number = 70;
 const baseRadius: number = 20;
 const approxBrickWidth: number = 5;
 const approxBrickHeight: number = 2;
@@ -398,26 +399,48 @@ let __prevTime = 0;
 
 const MAX_THETA = (31 * Math.PI) / 64;
 const MIN_THETA = -(31 * Math.PI) / 64;
-const THETA_JITTER = Math.PI / 128;
-const PHI_JITTER = Math.PI / 32;
+const THETA_JITTER = 0; //Math.PI / 128;
+const PHI_JITTER = 0; // Math.PI / 32;
+const TARGET_WIDTH = 12;
+const TARGET_LENGTH = 30;
 
 EM.registerSystem(
   [StoneTowerDef, WorldFrameDef],
   [TimeDef, PartyDef],
   (es, res) => {
-    const target = res.party.pos;
-    if (!target) return;
+    // pick a random spot on the ship to aim for
+    if (!res.party.pos) return;
+
     for (let tower of es) {
       const invertedTransform = mat4.invert(tower.world.transform);
-      const towerSpaceTarget = vec3.transformMat4(target, invertedTransform);
-      const prevTowerSpaceTarget = vec3.transformMat4(
+      const towerSpacePos = vec3.transformMat4(
+        res.party.pos,
+        invertedTransform
+      );
+      const prevTowerSpacePos = vec3.transformMat4(
         __previousPartyPos,
         invertedTransform
       );
 
       const targetVelocity = vec3.scale(
-        vec3.sub(towerSpaceTarget, prevTowerSpaceTarget),
+        vec3.sub(towerSpacePos, prevTowerSpacePos),
         1 / (res.time.time - __prevTime)
+      );
+
+      // pick an actual target to aim for on the ship
+      const zBasis = vec3.copy(vec3.tmp(), res.party.dir);
+      const xBasis = vec3.cross(res.party.dir, [0, 1, 0]);
+      vec3.scale(zBasis, (Math.random() - 0.5) * TARGET_LENGTH, zBasis);
+      vec3.scale(xBasis, (Math.random() - 0.5) * TARGET_WIDTH, xBasis);
+      //console.log(`xBasis is ${vec3Dbg(xBasis)}`);
+      //console.log(`zBasis is ${vec3Dbg(zBasis)}`);
+      const target = vec3.add(res.party.pos, vec3.add(zBasis, xBasis, xBasis));
+      target[1] *= 0.5;
+      console.log(`adjusted target is ${vec3Dbg(target)}`);
+      const towerSpaceTarget = vec3.transformMat4(
+        target,
+        invertedTransform,
+        target
       );
 
       /*
@@ -443,7 +466,7 @@ EM.registerSystem(
       */
 
       const v = tower.stoneTower.projectileSpeed;
-      const g = 10.0 * 0.00001;
+      const g = 6.0 * 0.00001;
 
       let x = towerSpaceTarget[0] - tower.stoneTower.cannon()!.position[0];
       const y = towerSpaceTarget[1] - tower.stoneTower.cannon()!.position[1];
@@ -451,10 +474,10 @@ EM.registerSystem(
 
       // try to lead the target a bit using an approximation of flight
       // time. this will not be exact.
-      const flightTime = x / (v * Math.cos(Math.PI / 4));
-      z = z + targetVelocity[2] * flightTime;
-      x = x + targetVelocity[2] * flightTime;
 
+      const flightTime = x / (v * Math.cos(Math.PI / 4));
+      z = z + targetVelocity[2] * flightTime * 0.5;
+      x = x + targetVelocity[0] * flightTime * 0.5;
       if (x < 0) {
         // target is behind us, don't worry about it
         continue;
@@ -534,7 +557,7 @@ EM.registerSystem(
       );
       tower.stoneTower.lastFired = res.time.time;
     }
-    vec3.copy(__previousPartyPos, target);
+    vec3.copy(__previousPartyPos, res.party.pos);
     __prevTime = res.time.time;
   },
   "stoneTowerAttack"

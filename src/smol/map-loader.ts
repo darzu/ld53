@@ -15,7 +15,7 @@ const DEFAULT_MAP_PATH = "assets/ld53_maps/";
 //   "map_maze",
 //   "map_narrow",
 // ] as const;
-export const MapPaths = ["tutorial1", "obstacles1"] as const;
+export const MapPaths = ["medium1", "tutorial1", "obstacles1"] as const;
 
 export type MapName = typeof MapPaths[number];
 

@@ -223,7 +223,7 @@ export async function initLD53(em: EntityManager, hosting: boolean) {
   em.requireSystem("detectGameEnd");
 
   // start map
-  await setMap(em, "tutorial1");
+  await setMap(em, "medium1");
 
   resetLand();
 
