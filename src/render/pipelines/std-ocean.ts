@@ -198,16 +198,16 @@ export const renderOceanPipe = CY.createRenderPipeline("oceanRender", {
       clear: "never",
       // clear: "always",
     },
-    {
-      ptr: worldNormsAndFresTexPtr,
-      clear: "never",
-      // clear: "always",
-    },
-    {
-      ptr: positionsTexturePtr,
-      clear: "never",
-      // clear: "always",
-    },
+    // {
+    //   ptr: worldNormsAndFresTexPtr,
+    //   clear: "never",
+    //   // clear: "always",
+    // },
+    // {
+    //   ptr: positionsTexturePtr,
+    //   clear: "never",
+    //   // clear: "always",
+    // },
     {
       ptr: surfacesTexturePtr,
       clear: "never",

@@ -86,16 +86,16 @@ export const stdRenderPipeline = CY.createRenderPipeline("stdMeshRender", {
       // defaultColor: [...vec3.clone(ENDESGA16.white), 1.0] as vec4,
       // defaultColor: [0.7, 0.8, 1.0, 1.0],
     },
-    {
-      ptr: worldNormsAndFresTexPtr,
-      clear: "once",
-      defaultColor: V(0, 0, 0, 0),
-    },
-    {
-      ptr: positionsTexturePtr,
-      clear: "once",
-      defaultColor: V(0, 0, 0, 0),
-    },
+    // {
+    //   ptr: worldNormsAndFresTexPtr,
+    //   clear: "once",
+    //   defaultColor: V(0, 0, 0, 0),
+    // },
+    // {
+    //   ptr: positionsTexturePtr,
+    //   clear: "once",
+    //   defaultColor: V(0, 0, 0, 0),
+    // },
     {
       ptr: surfacesTexturePtr,
       clear: "once",
