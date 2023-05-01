@@ -261,7 +261,7 @@ function knockOutBricksByBullet(
             bricksKnockedOut++;
             flyingBrickPool.spawn().then((flyingBrick) => {
               flyingBrick.physicsParent.id = tower.id;
-              console.log(brick.pos[0]);
+              //console.log(brick.pos[0]);
               vec3.copy(flyingBrick.position, brick.pos[0]);
               vec3.copy(flyingBrick.color, brick.color);
             });
@@ -607,7 +607,7 @@ EM.registerSystem(
   (es, _) =>
     es.forEach((e) => {
       if (!e.dead.processed) {
-        console.log("despawning brick");
+        //console.log("despawning brick");
         flyingBrickPool.despawn(e);
       }
     }),
