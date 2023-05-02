@@ -21,10 +21,11 @@ export const MapPaths = [
   "dont-go-right",
   "thread-needle",
   "every-which-way",
+  "tacking",
   // "rangetest",
 ] as const;
 
-export type MapName = typeof MapPaths[number];
+export type MapName = (typeof MapPaths)[number];
 
 export const MapHelp: Partial<Record<MapName, string>> = {
   "tutorial-attack-the-towers":
