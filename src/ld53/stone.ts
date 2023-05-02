@@ -903,7 +903,7 @@ EM.registerSystem(
             res.music.playSound(
               "stonebreak",
               res.soundSet["stonebreak.wav"],
-              0.5
+              0.1
             );
           });
           tower.stoneTower.currentBricks -= totalKnockedOut;
