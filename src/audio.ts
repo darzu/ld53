@@ -121,6 +121,8 @@ function createAudioState(): AudioState {
   }
 }
 
+let __lastPlay = new Map<string, number>();
+
 function createAudioResource() {
   let res = {
     state: undefined as AudioState | undefined,
@@ -130,12 +132,17 @@ function createAudioResource() {
 
   return res;
 
-  function playSound(sound: AudioBuffer, volume = 1) {
+  function playSound(name: string, sound: AudioBuffer, volume = 1) {
     if (!res.state) return;
+    const now = new Date().getTime();
+    if (__lastPlay.has(name) && now - __lastPlay.get(name)! < 500) {
+      return;
+    }
+    __lastPlay.set(name, now);
     const ctx = res.state.ctx;
     const source = ctx.createBufferSource();
     source.buffer = sound;
-
+    //source.playbackRate.setValueAtTime(2.0, 0.0);
     var gainNode = ctx.createGain();
     source.connect(gainNode);
     gainNode.connect(ctx.destination);

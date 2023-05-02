@@ -60,6 +60,7 @@ import {
   mergeAABBs,
   getAABBFromPositions,
 } from "./physics/aabb.js";
+import { SoundSetDef } from "./ld53/sound-loader.js";
 
 // TODO(@darzu): remove all references to pirates
 
@@ -201,6 +202,15 @@ onInit((em) => {
                       Math.min(woodHealth.health, ball.bullet.health) + 0.001;
                     woodHealth.health -= dmg;
                     ball.bullet.health -= dmg;
+                    if (dmg) {
+                      EM.whenResources(AudioDef, SoundSetDef).then((res) => {
+                        res.music.playSound(
+                          "woodbreak",
+                          res.soundSet["woodbreak.mp3"],
+                          0.02
+                        );
+                      });
+                    }
 
                     // TODO(@darzu): HUGE HACK to detect hitting a pirate ship
                     if (
@@ -212,7 +222,7 @@ onInit((em) => {
                       for (let fn of _destroyPirateShipFns)
                         fn(w.physicsParent.id, w);
                     } else if (ball.bullet.team === 2) {
-                      const music = EM.getResource(AudioDef);
+                      //const music = EM.getResource(AudioDef);
                       // if (music)
                       //   music.playChords([2, 3], "minor", 0.2, 1.0, -2);
                     }

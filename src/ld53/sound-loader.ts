@@ -6,7 +6,12 @@ import { getBytes } from "../webget.js";
 
 const DEFAULT_SOUND_PATH = "assets/sounds/";
 
-export const SoundPaths = ["cannonS", "cannonL"] as const;
+export const SoundPaths = [
+  "cannonS.mp3",
+  "cannonL.mp3",
+  "stonebreak.wav",
+  "woodbreak.mp3",
+] as const;
 
 export type SoundName = typeof SoundPaths[number];
 
@@ -27,7 +32,7 @@ async function loadSoundsData(): Promise<SoundSet> {
   console.log("loading sound data");
   // TODO(@darzu): PERF. Load on demand instead of all at once
   const soundPromises = SoundPaths.map(async (name) => {
-    const path = `${DEFAULT_SOUND_PATH}${name}.mp3`;
+    const path = `${DEFAULT_SOUND_PATH}${name}`;
     // return getBytes(path);
 
     // Decode asynchronously

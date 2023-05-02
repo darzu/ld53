@@ -136,7 +136,7 @@ export function registerCannonSystems(em: EntityManager) {
       // but everyone resets the cooldown and plays sound effects
       cannon.cannonLocal.fireMs = cannon.cannonLocal.fireDelayMs;
       EM.whenResources(AudioDef, SoundSetDef).then((res) => {
-        res.music.playSound(res.soundSet.cannonS, 0.2);
+        res.music.playSound("cannonS", res.soundSet["cannonS.mp3"], 0.2);
       });
 
       //const chord = randChordId();

@@ -822,7 +822,7 @@ EM.registerSystem(
         [1, 0, 0]
       );
       EM.whenResources(AudioDef, SoundSetDef).then((res) => {
-        res.music.playSound(res.soundSet.cannonL, 0.2);
+        res.music.playSound("cannonL", res.soundSet["cannonL.mp3"], 0.1);
       });
       b.then((b) => {
         if (missed) {
@@ -899,6 +899,13 @@ EM.registerSystem(
           );
         }
         if (totalKnockedOut) {
+          EM.whenResources(AudioDef, SoundSetDef).then((res) => {
+            res.music.playSound(
+              "stonebreak",
+              res.soundSet["stonebreak.wav"],
+              0.5
+            );
+          });
           tower.stoneTower.currentBricks -= totalKnockedOut;
           if (
             tower.stoneTower.currentBricks / tower.stoneTower.totalBricks <
