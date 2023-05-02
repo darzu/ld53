@@ -23,6 +23,7 @@ const NUM_STRINGS = 300;
 
 // TODO(@darzu): rename to .audio
 export const AudioDef = EM.defineComponent("music", createAudioResource);
+export const HasAudioDef = EM.defineComponent("hasAudio", () => true);
 export type Music = Component<typeof AudioDef>;
 
 export function registerMusicSystems(em: EntityManager) {
@@ -34,6 +35,7 @@ export function registerMusicSystems(em: EntityManager) {
     [AudioDef, CanvasDef],
     (_, res) => {
       if (once && res.htmlCanvas.hasFirstInteraction) {
+        em.addResource(HasAudioDef);
         // Init our audio
         // TODO(@darzu): maybe we shouldn't even create the resource until we
         //    have the audio context?
@@ -123,9 +125,23 @@ function createAudioResource() {
   let res = {
     state: undefined as AudioState | undefined,
     playChords,
+    playSound,
   };
 
   return res;
+
+  function playSound(sound: AudioBuffer, volume = 1) {
+    if (!res.state) return;
+    const ctx = res.state.ctx;
+    const source = ctx.createBufferSource();
+    source.buffer = sound;
+
+    var gainNode = ctx.createGain();
+    source.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    gainNode.gain.value = volume;
+    source.start();
+  }
 
   function playFreq(freq: number, durSec: number, offset: number) {
     if (!res.state) return;

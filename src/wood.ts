@@ -213,8 +213,8 @@ onInit((em) => {
                         fn(w.physicsParent.id, w);
                     } else if (ball.bullet.team === 2) {
                       const music = EM.getResource(AudioDef);
-                      if (music)
-                        music.playChords([2, 3], "minor", 0.2, 1.0, -2);
+                      // if (music)
+                      //   music.playChords([2, 3], "minor", 0.2, 1.0, -2);
                     }
                   }
                 }

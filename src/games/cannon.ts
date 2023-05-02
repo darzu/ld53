@@ -17,6 +17,7 @@ import { InputsDef } from "../inputs.js";
 import { DeletedDef } from "../delete.js";
 import { defineNetEntityHelper } from "../em_helpers.js";
 import { constructNetTurret, TurretDef } from "./turret.js";
+import { SoundSetDef } from "../ld53/sound-loader.js";
 
 export const { CannonPropsDef, CannonLocalDef, createCannon, createCannonNow } =
   defineNetEntityHelper(EM, {
@@ -134,9 +135,12 @@ export function registerCannonSystems(em: EntityManager) {
 
       // but everyone resets the cooldown and plays sound effects
       cannon.cannonLocal.fireMs = cannon.cannonLocal.fireDelayMs;
+      EM.whenResources(AudioDef, SoundSetDef).then((res) => {
+        res.music.playSound(res.soundSet.cannonS, 0.2);
+      });
 
-      const chord = randChordId();
-      EM.getResource(AudioDef)!.playChords([chord], "major", 2.0, 3.0, -2);
+      //const chord = randChordId();
+      //EM.getResource(AudioDef)!.playChords([chord], "major", 2.0, 3.0, -2);
     },
     {
       legalEvent: ([player, cannon]) => {

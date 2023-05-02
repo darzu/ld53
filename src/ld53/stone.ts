@@ -1,4 +1,5 @@
 import { AssetsDef } from "../assets.js";
+import { AudioDef } from "../audio.js";
 import { ColorDef } from "../color-ecs.js";
 import { ENDESGA16 } from "../color/palettes.js";
 import { DeadDef } from "../delete.js";
@@ -44,6 +45,7 @@ import { mat4, tV, V, vec3, quat } from "../sprig-matrix.js";
 import { TimeDef } from "../time.js";
 import { assert } from "../util.js";
 import { vec3Dbg } from "../utils-3d.js";
+import { SoundSetDef } from "./sound-loader.js";
 
 const GRAVITY = 6.0 * 0.00001;
 const MIN_BRICK_PERCENT = 0.6;
@@ -806,6 +808,7 @@ EM.registerSystem(
         mat4.mul(tower.world.transform, mat4.fromQuat(rot)),
         worldRot
       );
+
       const b = fireBullet(
         EM,
         2,
@@ -818,6 +821,9 @@ EM.registerSystem(
         20.0,
         [1, 0, 0]
       );
+      EM.whenResources(AudioDef, SoundSetDef).then((res) => {
+        res.music.playSound(res.soundSet.cannonL, 0.2);
+      });
       b.then((b) => {
         if (missed) {
           //vec3.set(0.8, 0.2, 0.2, b.color);

@@ -338,7 +338,7 @@ export function breakEnemyShip(
 ) {
   em.ensureComponentOn(enemyShip, DeletedDef);
 
-  music.playChords([3], "minor", 2.0, 5.0, -1);
+  //music.playChords([3], "minor", 2.0, 5.0, -1);
 
   for (let part of enemyShipParts) {
     const pe = em.new();
