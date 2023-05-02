@@ -22,6 +22,8 @@ export const MapPaths = [
   "thread-needle",
   "every-which-way",
   "tacking",
+  // "surprise", two wind blobs
+
   // "rangetest",
 ] as const;
 
