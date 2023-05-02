@@ -639,7 +639,7 @@ EM.registerSystem(
     if (!res.party.pos) return;
 
     for (let tower of es) {
-      if (!tower.stoneTower.alive) return;
+      if (!tower.stoneTower.alive) continue;
       const invertedTransform = mat4.invert(tower.world.transform);
       const towerSpacePos = vec3.transformMat4(
         res.party.pos,
